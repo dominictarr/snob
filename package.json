@@ -1,0 +1,21 @@
+{
+  "author": "Dominic Tarr <dominic.tarr@gmail.com> (dominictarr.com)",
+  "name": "adiff",
+  "description": "diff and patch arrays.",
+  "version": "0.0.0",
+  "homepage": "https://github.com/dominictarr/adiff",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/adiff.git"
+  },
+  "main": "./index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {}
+}
