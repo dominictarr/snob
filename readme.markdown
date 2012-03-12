@@ -4,10 +4,10 @@ perform diffs, and patches on arrays in javascript.
 
 ``` js
 
-  var diff = require('diff')
+  var adiff = require('adiff')
   var a = ['T', 'A', 'N', 'Y', 'A', 'N', 'A']
     , b = ['B', 'A', 'N', 'A', 'N', 'A']
-  var d = diff.diff(a, b)
+  var d = adiff.diff(a, b)
   console.log(d)
 
   //  [               //same format as Array.splice 
@@ -15,7 +15,7 @@ perform diffs, and patches on arrays in javascript.
   //  , [ 0, 1, 'B' ] //delete 1 element at index 0, then insert 'B'
   //  ]
 
-  var aPatched = diff.patch(a, changes)
+  var aPatched = adiff.patch(a, changes)
 
   var assert = require('assert')
   assert.deepEqual(aPatched, b)
