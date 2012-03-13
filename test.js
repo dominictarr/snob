@@ -14,10 +14,11 @@ if(!module.parent) {
     b = split(b)
     lcs = split(lcs)
     var _lcs = d.lcs(a, b)
+    d.chunk([a, b], console.log)
     console.log(a.join(''),b.join(''),_lcs.join(''))
     assert.deepEqual(_lcs, lcs)
     var changes = d.diff(a,b)
-    console.log('changes>', changes)
+    console.log('changes>', changes, 'applyTo:',a)
     var newA = d.patch(a, changes)
     assert.deepEqual(newA, b)
   }
@@ -46,8 +47,9 @@ if(!module.parent) {
   }
 
   // [this, concestor, other], expected
-  test3way(['abaaaa','aaaaa', 'aacaa'], 'abacaa')  // simple change
-  test3way(['abaaa','aaaa', 'aacca'], 'abacca') // simple change
+  test3way(['abaaaa','aaaaa', 'aaacaa'], 'abaacaa')  // simple change
+//  return
+  test3way(['abaa','aaa', 'aacca'], 'abacca') // simple change
   test3way(['abaaa','aaaaa', 'abaaa'], 'abaaa') // same change aka 'false conflict'
   test3way(['aaaaa','aaccaaa', 'aaccaaba'], 'aaaaba') // simple delete
   // since b is deleted.
@@ -56,4 +58,13 @@ if(!module.parent) {
   test3way(['aaa','axaa', 'axaab'], 'aaab') 
   test3way(['abaaba','aaaaa', 'aaacca'],
       ['a', 'b', 'a', 'a', {'?': [['b'], ['c','c']]}, 'a'])
+
+  // in these tests, i've replaced something, but you have just deleted it.
+  // it makes sense to merge my replace over your delete
+  test3way(['aBc', 'abc', 'acD'], 'aBcD')
+  test3way(['abaaa', 'aaaa', 'aacca'], 'abaacca')
+
+  //note, it's possible for this case to occur in a
+  //n-way merge where there is a delete and a false conflict.
+  //most merges will be only 3 ways, so lets leave that for now.
 }

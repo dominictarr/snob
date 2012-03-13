@@ -3,12 +3,20 @@ function head (a) {
   return a[0]
 }
 
+function last (a) {
+  return a[a.length - 1]
+}
+
 function tail(a) {
   return a.slice(1)
 }
 
 function advance (e) {
   return e.shift()
+}
+
+function retreat (e) {
+  return e.pop()
 }
 
 function hasLength (e) {
@@ -74,11 +82,89 @@ function lcs(a, b) {
   return recurse.apply(null, args)
 }
 
+// given n sequences, calc the lcs, and then chunk strings into stable and unstable sections.
+// chunk(sequences, build)
+// build should be (stable, unstable)
+// either stable or unstable will be passed. but never both.
+exports.chunk =
+function (q, build) {
+  var q = q.map(function (e) { return e.slice() })
+  var lcs = exports.lcs.apply(null, q)
+
+  function matchLcs (e) {
+    return last(e) == last(lcs) || ((e.length + lcs.length) === 0)
+  }
+
+  while(any(q, hasLength)) {
+    //if each element is at the lcs then this chunk is stable.
+    var stable = [], unstable = []
+    while(q.every(matchLcs) && q.every(hasLength) ) {
+      stable.unshift(retreat(lcs))
+      q.forEach(retreat)
+      console.log('.', q)
+    }
+
+    build(q[0].length, stable)
+
+    //collect the changes in each array upto the next match with the lcs
+    var c = false
+    var unstable = q.map(function (e) {
+      var change = []
+      while(!matchLcs(e)) {
+        change.unshift(retreat(e))
+        c = true
+      }
+      return change
+    })
+    if(c)
+      build(q[0].length, null, unstable)
+  
+  }
+}
+
+exports.diff =
+function (a, b) {
+  var changes = []
+  // hmm, don't use stable here...
+  // do i even need it?
+  exports.chunk([a, b], function (index, _, unstable) {
+    if(unstable) {
+      var del = unstable.shift().length
+      var insert = unstable.shift()
+      changes.push([index, del].concat(insert))
+    }
+  })
+  return changes
+}
+
+// http://en.wikipedia.org/wiki/Concestor
+// me, concestor, you...
+exports.merge = function () {
+  var args = [].slice.call(arguments)
+  var r = []
+  exports.chunk(args, function (index, stable, unstable) {
+
+    if(stable)
+      r = stable.concat(r)
+    else {
+      unstable = unstable.slice()
+      var _o = unstable.splice(1, 1)[0]
+      console.log('CONCESTOR', _o, unstable)
+      console.log('INDEX', index)
+      // there are special rules when for changes at the end?
+      r = [].concat(resolve(_o, unstable)).concat(r)
+       
+    }
+  })
+  return r
+}
+
 // generate a list of changes between a and b.
 // changes are stored in the format of arguments to splice.
 // index, numToDelete, ...itemsToInstert
 // THIS IS NEARLY EXACTLY LIKE merge() !!
-exports.diff = 
+/*
+exports._diff = 
 function diff (a , b) {
   a = a.slice()
   b = b.slice()
@@ -118,7 +204,7 @@ function diff (a , b) {
   }
   return changes
 }
-
+*/
 exports.patch = function (a, changes, mutate) {
   if(mutate !== true) a = a.slice(a)//copy a
   changes.forEach(function (change) {
@@ -161,8 +247,19 @@ var rules = [
       console.log('c = ', c, 'odd:', odd)
       if(c == 0) //this means that the concestor was the odd one.
         return changes[1] //that means the changes are the same 'false conflict'
-      else
-        return // full confilct
+      else {
+        var nonempty
+        for (var i = 1; i < changes.length; i++)
+          if(changes[i].length) 
+            if(!nonempty)
+              nonempty = changes[i]
+            else
+              return
+          
+        return nonempty// full confilct
+        //hang on, if there is only one (decendant) item not empty
+        //then merge that, because the others where deletes
+      }
     } 
     else // c must be 1
       return odd
@@ -181,8 +278,8 @@ function resolve (concestor, changes) {
   //if there is only one non empty change, use that.
   return {'?': changes}
 }
-
-exports.merge =
+/*
+exports._merge =
 function () { //mine, concestor, yours
   var args = [].slice.call(arguments).map(function (e) { return e.slice() })
   var lcs = exports.lcs.apply(null, args)
@@ -218,4 +315,4 @@ function () { //mine, concestor, yours
   }
   return r
 }
-
+*/

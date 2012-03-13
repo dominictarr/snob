@@ -37,7 +37,7 @@ refactors:
 
   should I generate a new sequence from the merge?
   or generate a patch?
-  or just make the new sequence and then make the patch.
+  or just make the new sequence and then make the patch?
  
 todo: maybe change how resolve works so that blame, or line age
 will be possible.
@@ -45,3 +45,6 @@ will be possible.
 #next
 
 commit tree!
+
+
+
