@@ -22,35 +22,26 @@ perform diffs, and patches on arrays in javascript.
 
 ```
 
-## next...
+## merge
 
-now, just need a three way merge...
+okay, I think this works. just need to refactor a bit,
+and double check test cases. 
 
-```
+refactors:
 
-merge(a, b, concestor)
-diff concestor a
-diff concestor b
-merge the changes
-apply to concestor.
+  exports a function that returns the adiff
 
-```
+  allow different equals, and resolve rules.
 
-hmm, how do you merge changes? 
-if they are from sequential commits.
-could apply one, then the next,
-then recalculate the changes?
-you might need to do that.
+  change arg order to concestor, mine, yours 
 
-if a'' changes a change in a', say, deleted something that was inserted.
-just do the simple way, recalculate the change. smarter way later.
+  should I generate a new sequence from the merge?
+  or generate a patch?
+  or just make the new sequence and then make the patch.
+ 
+todo: maybe change how resolve works so that blame, or line age
+will be possible.
 
-what about if the merges are from parallel commits?
-(assuming each branch has been flattened to a single patch)
+#next
 
-apply the changes, but check if changes overlap... in that case make an error.
-what if two commits make the same changes? what does git do?
-git detects that two commits are the same.
-prehaps, a simple test for the same change is enough.
-
-TODO: some reading on three-way-merge
+commit tree!
