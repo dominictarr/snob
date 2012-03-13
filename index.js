@@ -34,6 +34,33 @@ function equal(a, b) {
   return true
 }
 
+function getArgs(args) {
+  return args.length == 1 ? args[0] : [].slice.call(args)
+}
+
+
+// return the index of the element not like the others, or -1
+function oddElement(ary, cmp) {
+  var c
+  function guess(a) {
+    var odd = -1
+    c = 0
+    for (var i = a; i < ary.length; i ++) {
+      if(!cmp(ary[a], ary[i])) {
+        odd = i, c++
+      }
+    }
+    return c > 1 ? -1 : odd
+  }
+  //assume that it is the first element.
+  var g = guess(0)
+  if(-1 != g) return g
+  //0 was the odd one, then all the other elements are equal
+  //else there more than one different element
+  guess(1)
+  return c == 0 ? 0 : -1
+}
+
 exports.lcs = 
 function lcs(a, b) {
   var cache = {}
@@ -78,6 +105,7 @@ exports.chunk =
 function (q, build) {
   var q = q.map(function (e) { return e.slice() })
   var lcs = exports.lcs.apply(null, q)
+  var all = [lcs].concat(q)
 
   function matchLcs (e) {
     return last(e) == last(lcs) || ((e.length + lcs.length) === 0)
@@ -85,14 +113,8 @@ function (q, build) {
 
   while(any(q, hasLength)) {
     //if each element is at the lcs then this chunk is stable.
-    var stable = [], unstable = []
-    while(q.every(matchLcs) && q.every(hasLength) ) {
-      stable.unshift(retreat(lcs))
-      q.forEach(retreat)
-      console.log('.', q)
-    }
-
-    build(q[0].length, stable)
+    while(q.every(matchLcs) && q.every(hasLength)) 
+      all.forEach(retreat)
 
     //collect the changes in each array upto the next match with the lcs
     var c = false
@@ -104,17 +126,14 @@ function (q, build) {
       }
       return change
     })
-    if(c)
-      build(q[0].length, null, unstable)
+    if(c) build(q[0].length, unstable)
   }
 }
 
 exports.diff =
 function (a, b) {
   var changes = []
-  // hmm, don't use stable here...
-  // do i even need it?
-  exports.chunk([a, b], function (index, _, unstable) {
+  exports.chunk([a, b], function (index, unstable) {
     if(unstable) {
       var del = unstable.shift().length
       var insert = unstable.shift()
@@ -135,15 +154,15 @@ exports.patch = function (a, changes, mutate) {
 // http://en.wikipedia.org/wiki/Concestor
 // me, concestor, you...
 exports.merge = function () {
-  var args = [].slice.call(arguments)
-  var patch = exports.diff3.apply(null, args)
+  var args = getArgs(arguments)
+  var patch = exports.diff3(args)
   return exports.patch(args[0], patch)
 }
 
 exports.diff3 = function () {
-  var args = [].slice.call(arguments)
+  var args = getArgs(arguments)
   var r = []
-  exports.chunk(args, function (index, stable, unstable) {
+  exports.chunk(args, function (index, unstable) {
     if(unstable) {
       unstable = unstable.slice()
     //  var _o = unstable.splice(1, 1)[0]
@@ -157,83 +176,27 @@ exports.diff3 = function () {
   })
   return r
 }
-function oddElement(ary) {
-
-  function guess(a) {
-    var odd = -1, c = 0
-    for (var i = a; i < ary.length; i ++) {
-      if(!equal(ary[a], ary[i])) {
-        odd = i, c++
-      }
-    }
-    return c > 1 ? -1 : odd
-  }
-
-  var g = guess(0)
-  return !~g ? guess(1) : g
-}
 
 var rules = [
   function oddOneOut (changes) {
     changes = changes.slice()
     //put the concestor first
     changes.unshift(changes.splice(1,1)[0])
-   var oddi = oddElement(changes)
-    console.log('ODD ELEMENT INDEX', oddi, changes[oddi], changes)
+    var oddi = oddElement(changes, equal)
     if(oddi == 0) {// concestor was different
       return changes[1]
     }
     else if (oddi == -1) {
       //if there is only one non empty change thats okay.
       //else full confilct
-      console.log('CHECK NON IMPTY')
-      var nonempty
-      for (var i = 1; i < changes.length; i++)
+      for (var i = 1, nonempty; i < changes.length; i++)
         if(changes[i].length) 
-          if(!nonempty)
-            nonempty = changes[i]
-          else
-            return // full conflict
+          if(!nonempty) nonempty = changes[i]
+          else return // full conflict
       return nonempty
     } else
       return changes[oddi]
-
-    var odd = null, c = 0
-    for (var i = 1; i < changes.length; i ++) {
-      if(!equal(changes[0], changes[i])) {
-       odd = changes[i], c++
-      }
-    }
- 
-    if(c > 1) {
-      c = 0
-      odd = changes[0] //since we know it's different
-      for (var i = 2; i < changes.length; i ++) {
-          if(!equal(changes[1], changes[i]))
-            odd = changes[i], c++
-      }
-
-      if(c == 0) //this means that the concestor was the odd one.
-        return changes[1] //that means the changes are the same 'false conflict'
-      else {
-        var nonempty
-        for (var i = 1; i < changes.length; i++)
-          if(changes[i].length) 
-            if(!nonempty)
-              nonempty = changes[i]
-            else
-              return // full conflict
-        return nonempty
-        
-        //hang on, if there is only one (decendant) item not empty
-        //then merge that, because the others where deletes
-      }
-    } 
-    else // c must be 1
-      return odd
-   
-    return head(changes)
-  }
+ }
 ]
 
 function resolve (changes) {
