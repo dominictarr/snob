@@ -166,11 +166,11 @@ var rules = [
     changes = changes.slice()
     //put the concestor first
     changes.unshift(changes.splice(1,1)[0])
-    var oddi = oddElement(changes, equal)
-    if(oddi == 0) // concestor was different
+    var i = oddElement(changes, equal)
+    if(i == 0) // concestor was different, 'false conflict'
       return changes[1]
-    if (~oddi)
-      return changes[oddi] 
+    if (~i)
+      return changes[i] 
   },
   //i've implemented this as a seperate rule,
   //because I had second thoughts about this.
