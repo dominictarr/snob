@@ -29,22 +29,13 @@ and double check test cases.
 
 refactors:
 
-  exports a function that returns the adiff
+  - exports a function that returns the adiff
 
-  allow different equals, and resolve rules.
+  - allow different equals, and resolve rules.
 
-  change arg order to concestor, mine, yours 
-
-  should I generate a new sequence from the merge?
-  or generate a patch?
-  or just make the new sequence and then make the patch?
- 
 todo: maybe change how resolve works so that blame, or line age
 will be possible.
 
 #next
 
 commit tree!
-
-
-

@@ -41,7 +41,9 @@ if(!module.parent) {
     console.log('***********')
     console.log('TEST', args)
     console.log('***********')
-    var r = d.merge.apply(null, args)
+    var p = d.diff3.apply(null, args)
+//    var r = d.merge.apply(null, args)
+    var r = d.patch(args[0], p)
     assert.deepEqual(r, split(expected))
 
   }

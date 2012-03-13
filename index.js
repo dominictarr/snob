@@ -134,35 +134,38 @@ exports.patch = function (a, changes, mutate) {
 
 // http://en.wikipedia.org/wiki/Concestor
 // me, concestor, you...
-// throw this away, and write diff3
-// that returns a diff merged diff for 'mine'.
-// reuse the test, by 
 exports.merge = function () {
+  var args = [].slice.call(arguments)
+  var patch = exports.diff3.apply(null, args)
+  return exports.patch(args[0], patch)
+}
+
+exports.diff3 = function () {
   var args = [].slice.call(arguments)
   var r = []
   exports.chunk(args, function (index, stable, unstable) {
-    if(stable)
-      r = stable.concat(r)
-    else {
+    if(unstable) {
       unstable = unstable.slice()
       var _o = unstable.splice(1, 1)[0]
-      console.log('CONCESTOR', _o, unstable)
-      console.log('INDEX', index)
-      // there are special rules when for changes at the end?
-      r = [].concat(resolve(_o, unstable)).concat(r)
+      var mine = unstable[0]
+      var insert = resolve(_o, unstable)
+      del = mine.length
+      if(equal(mine, insert))
+        return 
+      r.push([index, del].concat(insert)) 
     }
   })
   return r
 }
-// merge changes in b since o into a
-// simpler algorithm, but same result as diff3
+
 
 var rules = [
   function oddOneOut (con, changes) {
     //changes.splice(1, 0, con)
     changes = changes.slice()
-    changes.unshift(con)
-    
+    changes.splice(1, 0, con)
+    //put the concestor first
+    changes.unshift(changes.splice(1,1)[0])
     // find the odd one out in changes.
     // ie, the only one not equal to the first one.
     // but what if the first one is the odd one?
@@ -170,13 +173,11 @@ var rules = [
     // (already compared that)
     // if that returned false, then all 
     var odd = null, c = 0
-    console.log('changes', changes)      
     for (var i = 1; i < changes.length; i ++) {
-        if(!equal(changes[0], changes[i])) {
-          odd = changes[i], c++
-        }
-    } 
-      console.log('c = ', c, 'odd:', odd)
+      if(!equal(changes[0], changes[i])) {
+        odd = changes[i], c++
+      }
+    }
     if(c > 1) {
       c = 0
       odd = changes[0] //since we know it's different
@@ -185,7 +186,6 @@ var rules = [
             odd = changes[i], c++
       }
 
-      console.log('c = ', c, 'odd:', odd)
       if(c == 0) //this means that the concestor was the odd one.
         return changes[1] //that means the changes are the same 'false conflict'
       else {
@@ -214,7 +214,6 @@ function resolve (concestor, changes) {
     var c = rules[i](concestor, changes)
     if(c) return c
   }
-  //apply merge rules in order.
   //if there is only one non empty change, use that.
   return {'?': changes}
 }
