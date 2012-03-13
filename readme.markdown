@@ -39,3 +39,28 @@ will be possible.
 #next
 
 commit tree!
+
+add a list to track,
+commit (new state)
+create a list of commits,
+
+  - a log for each branch
+
+what does a commit look like?
+
+``` js
+
+  { changes: {'object': changes}
+  , id: hashOfThisCommit
+  , prev: hashOfParentCommit
+  , depth: parent.depth + 1
+  , author: authorid/name
+  , message: editMessage
+  , timestamp: time
+  }
+
+```
+
+`depth` will help with finding the concestor.
+    
+
