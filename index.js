@@ -162,11 +162,11 @@ function oddElement(ary) {
   function guess(a) {
     var odd = -1, c = 0
     for (var i = a; i < ary.length; i ++) {
-      if(!equal(ary[0], ary[i])) {
+      if(!equal(ary[a], ary[i])) {
         odd = i, c++
       }
     }
-    return c > 1 ? -1 : i
+    return c > 1 ? -1 : odd
   }
 
   var g = guess(0)
@@ -178,12 +178,33 @@ var rules = [
     changes = changes.slice()
     //put the concestor first
     changes.unshift(changes.splice(1,1)[0])
+   var oddi = oddElement(changes)
+    console.log('ODD ELEMENT INDEX', oddi, changes[oddi], changes)
+    if(oddi == 0) {// concestor was different
+      return changes[1]
+    }
+    else if (oddi == -1) {
+      //if there is only one non empty change thats okay.
+      //else full confilct
+      console.log('CHECK NON IMPTY')
+      var nonempty
+      for (var i = 1; i < changes.length; i++)
+        if(changes[i].length) 
+          if(!nonempty)
+            nonempty = changes[i]
+          else
+            return // full conflict
+      return nonempty
+    } else
+      return changes[oddi]
+
     var odd = null, c = 0
     for (var i = 1; i < changes.length; i ++) {
       if(!equal(changes[0], changes[i])) {
-        odd = changes[i], c++
+       odd = changes[i], c++
       }
     }
+ 
     if(c > 1) {
       c = 0
       odd = changes[0] //since we know it's different
