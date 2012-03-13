@@ -11,10 +11,6 @@ function tail(a) {
   return a.slice(1)
 }
 
-function advance (e) {
-  return e.shift()
-}
-
 function retreat (e) {
   return e.pop()
 }
@@ -37,14 +33,6 @@ function equal(a, b) {
   }
   return true
 }
-
-function concat (a, b) {
-  if(!Array.isArray(b))
-    return a.push(b)
-  while(b.length)
-    a.push(b.shift())
-}
-
 
 exports.lcs = 
 function lcs(a, b) {
@@ -118,7 +106,6 @@ function (q, build) {
     })
     if(c)
       build(q[0].length, null, unstable)
-  
   }
 }
 
@@ -137,13 +124,23 @@ function (a, b) {
   return changes
 }
 
+exports.patch = function (a, changes, mutate) {
+  if(mutate !== true) a = a.slice(a)//copy a
+  changes.forEach(function (change) {
+    [].splice.apply(a, change)
+  })
+  return a
+}
+
 // http://en.wikipedia.org/wiki/Concestor
 // me, concestor, you...
+// throw this away, and write diff3
+// that returns a diff merged diff for 'mine'.
+// reuse the test, by 
 exports.merge = function () {
   var args = [].slice.call(arguments)
   var r = []
   exports.chunk(args, function (index, stable, unstable) {
-
     if(stable)
       r = stable.concat(r)
     else {
@@ -153,66 +150,10 @@ exports.merge = function () {
       console.log('INDEX', index)
       // there are special rules when for changes at the end?
       r = [].concat(resolve(_o, unstable)).concat(r)
-       
     }
   })
   return r
 }
-
-// generate a list of changes between a and b.
-// changes are stored in the format of arguments to splice.
-// index, numToDelete, ...itemsToInstert
-// THIS IS NEARLY EXACTLY LIKE merge() !!
-/*
-exports._diff = 
-function diff (a , b) {
-  a = a.slice()
-  b = b.slice()
-  var lcs = exports.lcs(a, b)
-
-  function matchLcs (e) {
-    return head(e) == head(lcs) || ((e.length + lcs.length) === 0)
-  }
-
- //how to print a diff.
-  //iterate through lcs.
-  //if first item in a is not present, it must have been deleted.
-  //if first item in b is not present, it must have been added.
-  var l = a.length
-  var changes = []
-  while(any([a, b], hasLength)) {
-    var index = l - a.length, del = 0, insert = []
-
-    while(!matchLcs(a)) {//(head(a) != head(lcs)) && a.length) {
-      del ++
-      a.shift()
-    }
-    while(!matchLcs(b)) {
-      insert.push(b.shift())
-    }
-    //we must now be at a point that all three lists are equall. 
-    if(del || insert.length)  {
-      insert.splice(0, 0, index, del)
-      //store changes in reverse order,
-      //so that you can apply insertions and deletes to the end of the list
-      //without affecting the indexes at the start of the list.
-      changes.unshift(insert)
-    }
-    lcs.shift()
-    a.shift()
-    b.shift()
-  }
-  return changes
-}
-*/
-exports.patch = function (a, changes, mutate) {
-  if(mutate !== true) a = a.slice(a)//copy a
-  changes.forEach(function (change) {
-    [].splice.apply(a, change)
-  })
-  return a
-}
-
 // merge changes in b since o into a
 // simpler algorithm, but same result as diff3
 
@@ -255,7 +196,6 @@ var rules = [
               nonempty = changes[i]
             else
               return
-          
         return nonempty// full confilct
         //hang on, if there is only one (decendant) item not empty
         //then merge that, because the others where deletes
@@ -278,41 +218,4 @@ function resolve (concestor, changes) {
   //if there is only one non empty change, use that.
   return {'?': changes}
 }
-/*
-exports._merge =
-function () { //mine, concestor, yours
-  var args = [].slice.call(arguments).map(function (e) { return e.slice() })
-  var lcs = exports.lcs.apply(null, args)
-  var r = []
 
-  function matchLcs (e) {
-    return head(e) == head(lcs) || ((e.length + lcs.length) === 0)
-  }
-
-  while(any(args, hasLength)) {
-    //if each element is at the lcs then this chunk is stable.
-    if(args.every(matchLcs)) {
-      r.push(lcs.shift())
-      args.forEach(advance)
-    } else {
-      //collect the changes in each array upto the next match with the lcs
-      console.log(args, 'lcs:',lcs)
-      var changes = args.map(function (e) {
-        var change = []
-        while(!matchLcs(e))
-           change.push(advance(e))
-        return change
-      })
-     var _o = changes.splice(1,1)[0] //get o from the list
-      //if each item in changes are equal, 
-      //  then it's a 'false conflict'
-      //if at most one array in changes is non empty
-      //  then that is a non-conflicting unstable chunk
-      //if there are more than one different non empty list
-      //  then that is a merge conflict!
-      concat(r, resolve(_o, changes))
-    } 
-  }
-  return r
-}
-*/
