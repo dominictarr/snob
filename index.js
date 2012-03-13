@@ -146,9 +146,9 @@ exports.diff3 = function () {
   exports.chunk(args, function (index, stable, unstable) {
     if(unstable) {
       unstable = unstable.slice()
-      var _o = unstable.splice(1, 1)[0]
+    //  var _o = unstable.splice(1, 1)[0]
       var mine = unstable[0]
-      var insert = resolve(_o, unstable)
+      var insert = resolve(unstable)
       del = mine.length
       if(equal(mine, insert))
         return 
@@ -157,21 +157,27 @@ exports.diff3 = function () {
   })
   return r
 }
+function oddElement(ary) {
 
+  function guess(a) {
+    var odd = -1, c = 0
+    for (var i = a; i < ary.length; i ++) {
+      if(!equal(ary[0], ary[i])) {
+        odd = i, c++
+      }
+    }
+    return c > 1 ? -1 : i
+  }
+
+  var g = guess(0)
+  return !~g ? guess(1) : g
+}
 
 var rules = [
-  function oddOneOut (con, changes) {
-    //changes.splice(1, 0, con)
+  function oddOneOut (changes) {
     changes = changes.slice()
-    changes.splice(1, 0, con)
     //put the concestor first
     changes.unshift(changes.splice(1,1)[0])
-    // find the odd one out in changes.
-    // ie, the only one not equal to the first one.
-    // but what if the first one is the odd one?
-    // -- try again with the second one, skipping the first.
-    // (already compared that)
-    // if that returned false, then all 
     var odd = null, c = 0
     for (var i = 1; i < changes.length; i ++) {
       if(!equal(changes[0], changes[i])) {
@@ -195,8 +201,9 @@ var rules = [
             if(!nonempty)
               nonempty = changes[i]
             else
-              return
-        return nonempty// full confilct
+              return // full conflict
+        return nonempty
+        
         //hang on, if there is only one (decendant) item not empty
         //then merge that, because the others where deletes
       }
@@ -208,13 +215,13 @@ var rules = [
   }
 ]
 
-function resolve (concestor, changes) {
+function resolve (changes) {
   var l = rules.length
   for (var i in rules) {
-    var c = rules[i](concestor, changes)
+    var c = rules[i](changes)
     if(c) return c
   }
-  //if there is only one non empty change, use that.
+  changes.splice(1,1) // remove concestor
   return {'?': changes}
 }
 
