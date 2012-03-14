@@ -40,6 +40,7 @@ Repository.prototype = {
     var commit = copy(meta) // filter correct attributs only?
     commit.changes = this.diff(meta.parent, world)
     commit.depth = (this.commits[meta.parent] || {depth: 0}).depth + 1
+    commit.timestamp = Date.now()
     commit.id = hash(commit)
 
     this.commits[commit.id] = commit
@@ -106,6 +107,7 @@ Repository.prototype = {
     
     commit.merged = branches
     commit.parent = branches[0]
+    commit.timestamp = Date.now()
     commit.id = hash(commit)
     commit.depth = this.commits[branches[0]].depth + 1
     this.commits[commit.id] = commit
