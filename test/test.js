@@ -1,4 +1,4 @@
-var d = require('./')
+var d = require('../')
 
 if(!module.parent) {
 
