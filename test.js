@@ -15,16 +15,13 @@ if(!module.parent) {
     lcs = split(lcs)
     var _lcs = d.lcs(a, b)
     d.chunk([a, b], console.log)
-    console.log(a.join(''),b.join(''),_lcs.join(''))
     assert.deepEqual(_lcs, lcs)
     var changes = d.diff(a,b)
-    console.log('changes>', changes, 'applyTo:',a)
     var newA = d.patch(a, changes)
     assert.deepEqual(newA, b)
   }
 
   test('AA', 'AA', 'AA')
-
   test('AB', 'BA', 'A')
   test('ABA', 'BAA', 'AA')
   test('TANYANA', 'BANANA', 'ANANA')
@@ -37,12 +34,9 @@ if(!module.parent) {
   function test3way(args, expected) {
   args = args.map(split)
 
-  //    var args = [].slice.call(arguments).map(split) 
-    console.log('***********')
-    console.log('TEST', args)
+    console.log('----- TEST', args)
     console.log('***********')
     var p = d.diff3.apply(null, args)
-//    var r = d.merge.apply(null, args)
     var r = d.patch(args[0], p)
     assert.deepEqual(r, split(expected))
 
@@ -50,7 +44,6 @@ if(!module.parent) {
 
   // [this, concestor, other], expected
   test3way(['abaaaa','aaaaa', 'aaacaa'], 'abaacaa')  // simple change
-//  return
   test3way(['abaa','aaa', 'aacca'], 'abacca') // simple change
   test3way(['abaaa','aaaaa', 'abaaa'], 'abaaa') // same change aka 'false conflict'
   test3way(['aaaaa','aaccaaa', 'aaccaaba'], 'aaaaba') // simple delete
