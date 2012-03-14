@@ -1,4 +1,4 @@
-#diff
+#adiff
 
 perform diffs, and patches on arrays in javascript.
 
@@ -27,15 +27,6 @@ perform diffs, and patches on arrays in javascript.
 okay, I think this works. just need to refactor a bit,
 and double check test cases. 
 
-refactors:
-
-  - exports a function that returns the adiff
-
-  - allow different equals, and resolve rules.
-
-todo: maybe change how resolve works so that blame, or line age
-will be possible.
-
 #next
 
 commit tree!
@@ -52,15 +43,24 @@ what does a commit look like?
 
   { changes: {'object': changes}
   , id: hashOfThisCommit
-  , prev: hashOfParentCommit
+  , parent: hashOfParentCommit
   , depth: parent.depth + 1
   , author: authorid/name
   , message: editMessage
-  , timestamp: time
+  , timestamp: time,
+  , merge: [] //array of commit id's of parents, 
+              //if this is a merge commit
   }
 
 ```
 
+what will a repository look like, in memory?
+
+{ branches: {
+    master: commitIdOfMastersHead
+  },
+  commits: [] // array of commits 
+}
 `depth` will help with finding the concestor.
     
 
