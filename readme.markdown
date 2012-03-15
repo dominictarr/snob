@@ -43,7 +43,7 @@ collect add those items into an unstable chunk.
 once you have the chunks getting a list of changes that you can apply is easy...
 
 making a diff from a to b we want to know what changes to make to a to get b. 
-the way I have node this (https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/splice)[Array#splice]
+the way I have node this [Array#splice](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/splice)
 so, for `["AB", ["D", ""], "C", ["E", "XYZ"], "F"]`we want:
 
 ``` js
