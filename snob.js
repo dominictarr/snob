@@ -3,6 +3,8 @@ var a = require('./index')
 
 function Repository () {
   this.commits = {}
+  this.branches = {}
+  this.tags = {}
 }
 
 function map(obj, itr) {
@@ -22,7 +24,7 @@ function keys (obj) {
   return ks
 }
 
-var createHash = require('crypto').createHash
+var createHash = require('crypto').createHash // make this injectable...
 function hash (obj) {
   return createHash('sha').update(JSON.stringify(obj)).digest('hex')
 }
@@ -37,6 +39,8 @@ Repository.prototype = {
     // head = checkout (branch)
     // diff(head, world)
     // bundle with meta, add to commits 
+    var branch = meta.parent //save the branch name
+    meta.parent = this.getId(branch) 
     var commit = copy(meta) // filter correct attributs only?
     commit.changes = this.diff(meta.parent, world)
     commit.depth = (this.commits[meta.parent] || {depth: 0}).depth + 1
@@ -44,8 +48,23 @@ Repository.prototype = {
     commit.id = hash(commit)
 
     this.commits[commit.id] = commit
+    this.branch(branch, commit.id)
     return commit
       // emit the new commit 
+  },
+  get: function (commitish) {
+    return this.commits[commitish] || this.branches[commitish] || this.tags[commitish]
+  },
+  getId: function (commitish) {
+    return (this.get(commitish) || {id:null}).id 
+  },
+  tag: function (name, commitish) {
+    this.tags[name] = this.getId(commitish) 
+  },
+  branch: function (name, commitish) {
+    // do not save this as a branch if it's actually a commit, or a tag.
+    if(this.commits[name] || this.tags[name]) return
+    this.branches[name] = this.getId(commitish)
   },
   diff: function (parent, world) {
     var head = this.checkout(parent)
@@ -67,29 +86,32 @@ Repository.prototype = {
     // recurse down from each head, looking for the last index of that item.
     // chop the tail when you find something, and move to the next head.
     // the concestor(a, b, c) must equal concestor(concestor(a, b), c)
-    heads = heads.slice()
+    var getId = this.getId.bind(this)
+    heads = heads.map(getId)
     var first = heads.shift()
     var revlist = this.revlist(first)
     var commits = this.commits
+    var l =  -1
     function last (a) {
       return a[a.length - 1]
     }
     function find (h) {
-      if(!revlist.length) return
-      var i = revlist.lastIndexOf(h)
-      if(i !== -1) {
-        revlist.splice(i + 1) //shorten the list 
-        return
-      }// am assuming, that there is always a concestor
-      find(commits[h].parent)
+      var i = revlist.lastIndexOf(h, ~l ? l : null)
+      if(i !== -1) l = i
+      else find(commits[h].parent)
     }
     while(heads.length)
       find(heads.shift())
-    return last(revlist)
+    return revlist[l]
   },
   merge: function (branches, meta) { //branches...
+    // TODO, the interesting problem here is to handle async conflict resolution.
+    // hmm, maybe just mark the conflicts but do not update the branch?
+    // afterall, this isn't really for SCM, the usecases are usally gonna take automatic resolves.
+ 
     // find the concestor of the branches,
     // then calculate an n-way merge of all the checkouts.
+    var mine = branches[0]
     var concestor = this.concestor(branches)
     branches.splice(1, 0, concestor)
     var self = this
@@ -111,12 +133,13 @@ Repository.prototype = {
     commit.id = hash(commit)
     commit.depth = this.commits[branches[0]].depth + 1
     this.commits[commit.id] = commit
+    this.branch(mine, commit.id) // if this was merge( ['master', ...], ...) update the branch
     return commit
   },
-  checkout: function (name) {
-    if(name == null)
+  checkout: function (commitish) {
+    if(commitish == null)
       return {}
-    var commit = this.commits[name]
+    var commit = this.get(commitish)
     var state = this.checkout(commit.parent)
     return map(commit.changes, function (change, key) {
       return a.patch(state[key] || [], change)
