@@ -23,7 +23,7 @@ function lcs (a,b)
 this is very simple, but with exponential time complexity.
 however, it can easily be made sufficantly performant by cacheing the return value of each call to lcs().
 
-see js implementation, (./index.js#L64-94)
+see js implementation, [index.js#L64-94](index.js#L64-94)
 
 ## chunking
 
@@ -62,8 +62,8 @@ this makes the function to apply the patch _very_ simple
 ``` js
   function patch (orig, changes) {
     var ary = orig.split('') //assuming that orig is just a string
-    changes.forEach(function (e) {
-      [].splice.apply(ary, changes)
+    changes.forEach(function (ch) {
+      [].splice.apply(ary, ch)
     })
     return ary.join('')
   }
@@ -73,6 +73,6 @@ this makes the function to apply the patch _very_ simple
  
 if we want a _distributed_ version management system, the we need to be able to make changes in parallel.
 this is only a slightly more complicated problem. given a string `"ABDCEF"`, If I changed it to `"ABCXYZF"`
-and meanwhile you changed it to "AXBCEFG". we must compare each of our changes to the original string, the (http://en.wikipedia.org/wiki/Concestor)[Concestor] 
+and meanwhile you changed it to "AXBCEFG". we must compare each of our changes to the original string, the [Concestor](http://en.wikipedia.org/wiki/Concestor)
 
 TODO: worked example with chunks, resolve.
