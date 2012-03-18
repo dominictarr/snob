@@ -8,7 +8,6 @@ one of the best uses is to learn you exactly how git works.
 if you want to know what is the difference between two files, you must first know what is the same.
 this is called the Longest Common Subsequence problem. if you have two sequences `x = "ABDCEF" and `y = "ABCXYZF"` then `LCS(x,y)` is clearly "ABCF".
 
-
 ## lcs
 
 ```
@@ -23,7 +22,7 @@ function lcs (a,b)
 this is very simple, but with exponential time complexity.
 however, it can easily be made sufficantly performant by cacheing the return value of each call to lcs().
 
-see js implementation, [index.js#L64-94](index.js#L64-94)
+see js implementation, [index.js#L64-94](https://github.com/dominictarr/adiff/blob/master/index.js#L63-94)
 
 ## chunking
 
@@ -76,3 +75,23 @@ this is only a slightly more complicated problem. given a string `"ABDCEF"`, If 
 and meanwhile you changed it to "AXBCEFG". we must compare each of our changes to the original string, the [Concestor](http://en.wikipedia.org/wiki/Concestor)
 
 TODO: worked example with chunks, resolve.
+
+## self hosting!
+
+snob became self hosting 
+
+```
+4f63d2637ae35e9313fd4f23ea6cf4e8e527ba3c null Sun, 18 Mar 2012 08:20:34 GMT
+```
+
+
+## what next?
+
+refactor snob out of adiff. 
+still thinking about how I will manage diffs on objects,
+  - refactor vu, with what I know now.
+giving snob a cli, and in particular, push/pullable remotes, is the first step to being distributed.
+
+  - improve support for injection with merge resolution.
+  - get running in the browser
+  - make Repository an EventEmitter

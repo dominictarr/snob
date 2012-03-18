@@ -7,20 +7,23 @@ var world
 var init = snob.commit(world = {
     hello: ['who', 'what', 'when','why']
   },
-  { message: 'init'})
+  { message: 'init', parent: 'master'})
 
 assert.equal(init.depth, 1)
-console.log(init)
+
+assert.equal(snob.getId('master'), init.id)
+
+snob.branch('underdog', init.id)
 
 var _world = snob.checkout(init.id)
 
 assert.deepEqual(_world, world)
 
-console.log(_world, world)
 world.hello.splice(2, 0, 'how')
+
 var second = snob.commit(world, {
     message: 'second',
-    parent: init.id
+    parent: 'master'
   })
 
 console.log(second)
@@ -30,12 +33,14 @@ assert.deepEqual(
   snob.revlist(second.id), 
   [ init.id, second.id])
 
+assert.deepEqual(second.depth, 2)
+
 //a branch off init, so can test merge
 
 _world.hello.push('WTF!?')
 var branch = snob.commit(_world, {
     message: 'branch',
-    parent: init.id
+    parent: 'underdog' 
   })
 
 assert.equal(branch.depth, 2)

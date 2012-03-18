@@ -62,4 +62,6 @@ if(!module.parent) {
   //note, it's possible for this case to occur in a
   //n-way merge where there is a delete and a false conflict.
   //most merges will be only 3 ways, so lets leave that for now.
+
+  console.log(d.diff3(split("ABCXYZF"), split("ABDCEF"), split("AXBCEFG")))
 }

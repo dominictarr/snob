@@ -47,13 +47,16 @@ Repository.prototype = {
     commit.timestamp = Date.now()
     commit.id = hash(commit)
 
+    // XXX make an error if the commits are empty !!! XXX 
+
     this.commits[commit.id] = commit
     this.branch(branch, commit.id)
+    console.log('new commit',branch, commit.id, this.getId(commit.id))
     return commit
       // emit the new commit 
   },
   get: function (commitish) {
-    return this.commits[commitish] || this.branches[commitish] || this.tags[commitish]
+    return this.commits[commitish] || this.commits[this.branches[commitish] || this.tags[commitish]]
   },
   getId: function (commitish) {
     return (this.get(commitish) || {id:null}).id 
@@ -63,18 +66,24 @@ Repository.prototype = {
   },
   branch: function (name, commitish) {
     // do not save this as a branch if it's actually a commit, or a tag.
-    if(this.commits[name] || this.tags[name]) return
-    this.branches[name] = this.getId(commitish)
+    if(this.commits[name] || this.tags[name]) {
+      console.log('!!!!!!!!!!!!!!!!!!!!!')
+      return this.getId(commitish)
+    }
+    console.log('BRANCH', name, commitish)
+    return this.branches[name] = this.getId(commitish)
   },
   diff: function (parent, world) {
     var head = this.checkout(parent)
+    if('object' !== typeof world)
+      world = this.checkout(world)
     return map(world, function (b, f) {
       return a.diff(head[f] || [], b)
     })
   },
   revlist: function (id) {
-    if(!id) return []
-    var commit = this.commits[id]
+    var commit = this.get(id)
+    if(!commit) return []
     return this.revlist(commit.parent).concat(id)
   },
   concestor: function (heads) { //a list of commits you want to merge
@@ -129,9 +138,11 @@ Repository.prototype = {
     
     commit.merged = branches
     commit.parent = branches[0]
-    commit.timestamp = Date.now()
-    commit.id = hash(commit)
     commit.depth = this.commits[branches[0]].depth + 1
+    commit.timestamp = Date.now()
+
+    commit.id = hash(commit)
+
     this.commits[commit.id] = commit
     this.branch(mine, commit.id) // if this was merge( ['master', ...], ...) update the branch
     return commit
