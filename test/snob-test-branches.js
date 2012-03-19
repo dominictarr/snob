@@ -1,6 +1,6 @@
 
 var assert = require('assert')
-var Repo = require('../snob')
+var Repo = require('../')
 
 var snob = new Repo()
 var world

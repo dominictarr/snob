@@ -1,4 +1,6 @@
-var a = require('./index')
+module.exports = function (deps) {
+var a = deps.adiff
+var hash = deps.hash
 // reimplementing git, because I'm insane.
 
 function Repository () {
@@ -22,11 +24,6 @@ function keys (obj) {
   for (var k in obj)
     ks.push(k)
   return ks
-}
-
-var createHash = require('crypto').createHash // make this injectable...
-function hash (obj) {
-  return createHash('sha').update(JSON.stringify(obj)).digest('hex')
 }
 
 Repository.prototype = {
@@ -67,10 +64,8 @@ Repository.prototype = {
   branch: function (name, commitish) {
     // do not save this as a branch if it's actually a commit, or a tag.
     if(this.commits[name] || this.tags[name]) {
-      console.log('!!!!!!!!!!!!!!!!!!!!!')
       return this.getId(commitish)
     }
-    console.log('BRANCH', name, commitish)
     return this.branches[name] = this.getId(commitish)
   },
   diff: function (parent, world) {
@@ -166,4 +161,6 @@ Repository.prototype = {
   }
 }
 
-module.exports = Repository
+return Repository
+
+}

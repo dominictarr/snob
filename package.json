@@ -1,21 +1,26 @@
 {
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (dominictarr.com)",
-  "name": "adiff",
-  "description": "diff and patch arrays.",
+  "name": "snob",
+  "description": "self hosting distributed version control system in javascript",
   "version": "0.0.0",
-  "homepage": "https://github.com/dominictarr/adiff",
+  "homepage": "https://github.com/dominictarr/snob",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dominictarr/adiff.git"
+    "url": "git://github.com/dominictarr/snob.git"
   },
   "main": "./index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test/snob-test.js && node test/snob-test-branches.js"
   },
   "engines": {
     "node": "*"
   },
-  "dependencies": {},
+  "dependencies": {
+    "adiff": "0.1"
+  },
+  "bin": {
+    "snob": "./cli.js"
+  }, 
   "devDependencies": {},
   "optionalDependencies": {}
 }

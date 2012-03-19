@@ -1,6 +1,8 @@
+#! /usr/bin/env node
+
 var fs = require('fs')
 var join = require('path').join
-var Repo = require('./snob')
+var Repo = require('./')
 
 // just for a joke, lets add a CLI so that snob can be self hosting.
 
