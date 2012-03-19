@@ -121,6 +121,8 @@ module.exports = function (deps) {
       heads.forEach(getAncestors)
       return ancestors
     },
+    // MUST return commits in topolgical order. 
+    // so a repo adding them will know about the parent of a new commit (because it's a head they sent, or it's a commit they've just added)
     decendants: function (heads) {
       var ancestors = this.ancestors(heads)
       var heads = this.heads()
@@ -132,10 +134,21 @@ module.exports = function (deps) {
         if(seen[h]) return // is this faster than decendants.indexOf ?
         seen[h] = 1
         var commit = self.get(h)
-        decendants.push(commit)
+        decendants.unshift(commit) //unshifting will mean that the list starts with a commit that is a direct decendant of a head.
         getDecendants(commit.parent) 
       }
       heads.forEach(getDecendants)
+    },
+    addCommits: function (commits) {
+      //iterate through commits
+      var self = this
+      commits.forEach(function (e) {
+        if(self.commits[e.id]
+        if(self.commits[e.parent] || e.parent == null)
+          self.commits[e.id] = e
+        else
+          throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
+      })
     },
     merge: function (branches, meta) { //branches...
       // TODO, the interesting problem here is to handle async conflict resolution.
