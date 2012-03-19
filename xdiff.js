@@ -6,22 +6,43 @@ function map(obj, itr) {
     r[i] = itr(obj[i], i, obj)
   return r
 }
+/*
+  to expand this into a real "database",
+  also need {} objects.
 
-function copy(obj) {
-  return map(obj, function(e) {return e})
-}
-function keys (obj) {
-  var ks = []
-  for (var k in obj)
-     ks.push(k)
-  return ks
-}
+  there are alot more possibilities when those get added to the mix.
 
+  consider this:
+  var older = 
+    { a: {},
+    , b: { hello: 'birthday message' } }
+  var newer = 
+    { a: { hello: 'birthday message' },
+    , b: {} }
+
+  what has happened here?
+  have we set a.hello = 'birthday message'
+  and b = {}
+  or have we set a = b; b = {}
+
+  detecting a move is computationally expensive, and ambigious.
+
+  thinking about this, i've decided that a reasonable compromise is to only
+  handle moves when the object in question has an id (of some kind), and otherwise,
+  to assume each change to an object is a set.
+
+*/
 module.exports = {
   diff: function (older, newer) {
-    return map(newer, function (n, k){
-      return a.diff(older[k] || [], n)
+    var didChange = false
+    var change = map(newer, function (n, k){
+      var ch = a.diff(older[k] || [], n)
+      if(ch.length)
+        didChange = true
+      return ch
     })
+    if(!didChange) return null
+    return change
   },
   diff3: function (branches) { //mine, concestor, yours,...
     if(arguments.length > 1)
