@@ -16,8 +16,9 @@
     "node": "*"
   },
   "dependencies": {
-    "adiff": "0.1"
-  },
+    "adiff": "0.1",
+    "optimist": "0.3"
+   },
   "bin": {
     "snob": "./cli.js"
   }, 
