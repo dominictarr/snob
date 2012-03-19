@@ -48,7 +48,6 @@ Repository.prototype = {
 
     this.commits[commit.id] = commit
     this.branch(branch, commit.id)
-    console.log('new commit',branch, commit.id, this.getId(commit.id))
     return commit
       // emit the new commit 
   },
@@ -115,11 +114,15 @@ Repository.prototype = {
  
     // find the concestor of the branches,
     // then calculate an n-way merge of all the checkouts.
+    var self = this
+    branches.map(function (e) {
+      return self.getId(e)
+    })
     var mine = branches[0]
     var concestor = this.concestor(branches)
     branches.splice(1, 0, concestor)
     var self = this
-    var commit = copy(meta)
+    var commit = meta ? copy(meta) : {}
     var checkouts = branches.map(function (e) {
       return self.checkout(e)
     })
@@ -132,8 +135,8 @@ Repository.prototype = {
     //TODO build the commit, and stick it in.
     
     commit.merged = branches
-    commit.parent = branches[0]
-    commit.depth = this.commits[branches[0]].depth + 1
+    commit.parent = this.getId(branches[0])
+    commit.depth = this.get(branches[0]).depth + 1
     commit.timestamp = Date.now()
 
     commit.id = hash(commit)

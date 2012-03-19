@@ -3,6 +3,7 @@
 var fs = require('fs')
 var join = require('path').join
 var Repo = require('./')
+var optimist = require('optimist')
 
 // just for a joke, lets add a CLI so that snob can be self hosting.
 
@@ -19,7 +20,6 @@ var Repo = require('./')
     tag name commitish
     merge commitish1 commitish2 || current_branch 
     branch branchname
-    whereami show current branch
 
 */
 
@@ -57,19 +57,24 @@ Snob.prototype = {
       repo.branches = state.branches || {}
       repo.tags = state.tags || {}
       self.current = state.current 
-      console.log(state)
       ready(err)
     })
   },
   save: function (commit, callback) {
     var n = 2, err
+    if(!callback) callback = commit, commit = null
+
     function ready (e) {
       err = err || e
       if(!--n) return
       callback(err)
     }
-    append(join(this.dir, '.snob', 'commits')
-      , JSON.stringify(commit) + '\n', ready)
+
+    if(!commit)
+      n = 1
+    else
+      append(join(this.dir, '.snob', 'commits')
+        , JSON.stringify(commit) + '\n', ready)
 
     fs.writeFile(join(this.dir, '.snob', 'state')
       , JSON.stringify({
@@ -77,7 +82,32 @@ Snob.prototype = {
           tags: this.repo.tags,
           current: this.current || 'master' ,
         }), ready)
+  },
+  readFiles: function (files, callback) {
+
+  var n = files.length 
+  var world = {}
+  var state = this
+  var err
+
+  files.map(function (f) {
+    state.read(f, function (err, text) {
+      if(err)
+        return done(err)
+      world[f] = text.split('\n')
+      done()
+    })
+  })
+
+  function done (e, text) {
+    err = err || e
+    if(--n) return
+    callback(err, world)
   }
+
+}
+
+ 
 }
 
 function append (file, text, callback) {
@@ -106,7 +136,7 @@ function findDir (dir) {
 var commands = {
   init: function (dir) {
     dir = dir || process.cwd()
-  var dotsnob = join(dir, '.snob')
+    var dotsnob = join(dir, '.snob')
     try {
       fs.readdirSync(dotsnob) 
     } catch (err) {
@@ -122,62 +152,110 @@ var commands = {
     }
   },
   commit: function () {
-    var state = findDir()
     var files = [].slice.call(arguments)
-    var n = files.length + 1// extra one is the repo commits file
-    var repo = state.repo
-    state.load (done)
+    var repo = this.repo
+    var state = this
     if(!files.length)
       throw new Error('expected args: files to commit')
-    console.log(files)
+    console.log('commiting', files)
     //read each file, and 
-    var world = {}
-
-    files.map(function (f) {
-      state.read(f, function (err, text) {
-        world[f] = text.split('\n')
-        done(err)
-      })
-    })
-
-    function done (err, text) {
+    this.readFiles(files, function (err, world) {
+      console.log('READ')
       if(err) throw err
-      if(--n) return
       var commit = repo.commit(world, {parent: state.current || 'master'})
       console.log(commit)
       state.save(commit, console.log) 
-    }
-  },
-  heads: function () {
-    var state = findDir()
-    state.load(function () {
-      console.log(state.repo.heads())
-    })
-  },
-  branch: function () {
-     var state = findDir()
-    state.load(function (err) {
-      if(err) throw err
-      console.log(state.repo.branches, 'current:', state.current)
     }) 
   },
+  heads: function () {
+    console.log(this.repo.heads())
+  },
+  branch: function (branch) {
+    var onbranch = false
+    if(!branch) {
+      for(var i in this.repo.branches) {
+        var b = this.current == i ? '*' : ''
+        console.log(i, b) 
+        onbranch = onbranch || b
+      }
+      if(!onbranch)
+        console.log(this.current, '*')
+    }
+    else {
+      this.repo.branch(branch, this.current)
+      this.current = branch
+      this.save(function () {
+        console.log('created branch', branch)
+      })
+    }
+  },
   log: function () {
-    var state = findDir()
-    state.load(function () {
-      state.repo.revlist('master') // add changing branch
+    
+    this.repo.revlist('master') // add changing branch
       .map(function (id) {
-        
+      
         var commit = state.repo.get(id)
         console.log(commit.id, commit.parent, new Date(commit.timestamp))
-      })
-    })
+      }) 
+  },
+  diff: function (commitish1, commitish2) {
+    console.log(this.repo.diff(commitish1, commitish2))
+  },
+  checkout: function (commitish) {
+    var n = 0
+    var newWorld = this.repo.checkout(commitish)
+    var state = this
+    var hasConflicts = []
+    for(var name in newWorld) {
+      file = newWorld[name].map(function(e) {
+        if('object' !== typeof e)
+          return e
+        hasConflicts.push(name)
+        var conflicts = e['?'].map(function (e) {
+          return e.join('\n')
+        })
+        return         '<<<<<<<<<<<<<<<<<\n' +
+        conflicts.join('\n=================\n') +
+                       '\n>>>>>>>>>>>>>>>>>'
+      }).join('\n') 
+      n ++
+      fs.writeFile(name, file, 'utf-8', done)
+    }
+
+    function done (err) {
+      if(err) throw err
+      if(--n) return
+      console.log('checked out:', commitish)
+      state.current = commitish
+      if(hasConflicts.length)
+        console.log('WARNING: conflicts in', hasConflicts)
+      state.save()
+    }
+  },
+  merge: function () {
+    var branches = [].slice.call(args)
+    if(!args.length)
+      throw new Error('expected arg: at least one commitish to merge')
+    branches.unshift(this.current)
+    console.log('merging', branches)
+    var commit = this.repo.merge (branches)
+    console.log(commit)
+    this.save(commit, function () {
+      
+
+    })  
+ //   commands.checkout.call(this, commit.id)
   }
 }
 
-var args = process.argv
-args.splice(0, 2)
-
-console.log(args)
+var args = optimist.argv._
 var cmd = args.shift()
-if(commands[cmd])
-  commands[cmd].apply(null, args)
+if(cmd == 'init')
+  commands.init.apply(null, args)
+else if(commands[cmd]) {
+  var state = findDir()
+  state.load(function (err) {
+    if(err) throw err
+    commands[cmd].apply(state, args)
+  })
+}
