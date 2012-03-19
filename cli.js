@@ -22,7 +22,6 @@ var optimist = require('optimist')
     branch branchname
 
 */
-
 function Snob (dir) {
   this.dir = dir
   this.repo = new Repo()
@@ -31,6 +30,15 @@ function Snob (dir) {
 Snob.prototype = {
   read: function (file, ready) {
     fs.readFile(join(this.dir, file), 'utf-8', ready)
+  },
+  meta: function (parent) {
+    //TODO add configuration properly, with authors, etc.
+    var m = {
+      message: this.opts.m || this.opts.message
+    }
+    if(parent)
+    m.parent = parent
+    return m
   },
   load: function (callback) {
     var repo = this.repo, self = this
@@ -85,29 +93,26 @@ Snob.prototype = {
   },
   readFiles: function (files, callback) {
 
-  var n = files.length 
-  var world = {}
-  var state = this
-  var err
+    var n = files.length 
+    var world = {}
+    var state = this
+    var err
 
-  files.map(function (f) {
-    state.read(f, function (err, text) {
-      if(err)
-        return done(err)
-      world[f] = text.split('\n')
-      done()
+    files.map(function (f) {
+      state.read(f, function (err, text) {
+        if(err)
+          return done(err)
+        world[f] = text.split('\n')
+        done()
+      })
     })
-  })
 
-  function done (e, text) {
-    err = err || e
-    if(--n) return
-    callback(err, world)
+    function done (e, text) {
+      err = err || e
+      if(--n) return
+      callback(err, world)
+    }
   }
-
-}
-
- 
 }
 
 function append (file, text, callback) {
@@ -132,6 +137,36 @@ function findDir (dir) {
       return findDir(join(dir, '..'))
   }
 }
+function logCommit (commit, verbose) {
+  console.log('commit', commit.id)
+  console.log('Date:  ', new Date(commit.timestamp))
+  if(commit.message) {
+    console.log()
+    console.log(commit.message.split('\n').map(function (e) {
+      return '  ' + e
+    }).join('\n'))
+    console.log()
+  }
+  if(verbose)
+    console.log('changes:', commit.changes)
+}
+
+/*
+
+  TODO pull, push
+
+  to pull, send repo's list of heads to remote.
+  remote will send all it's commits that are decendant's of your heads or thier ancestors.
+  (idea: use depth to shortcut this?) 
+
+  to push, request remote's heads, then do the same.
+
+  hmm, you can still send to a repo that has heads you don't have, but it will not be able to update branches.
+  it's not what you want with git, but you might want to use this for allsorts of version control stuff, possibly
+  with various automatic merging, etc.
+
+*/
+
 
 var commands = {
   init: function (dir) {
@@ -154,17 +189,15 @@ var commands = {
   commit: function () {
     var files = [].slice.call(arguments)
     var repo = this.repo
-    var state = this
+    var self = this
     if(!files.length)
       throw new Error('expected args: files to commit')
-    console.log('commiting', files)
     //read each file, and 
     this.readFiles(files, function (err, world) {
-      console.log('READ')
       if(err) throw err
-      var commit = repo.commit(world, {parent: state.current || 'master'})
-      console.log(commit)
-      state.save(commit, console.log) 
+      var commit = repo.commit(world, self.meta(state.current || 'master'))
+      logCommit(commit, true)
+      self.save(commit, function (){}) 
     }) 
   },
   heads: function () {
@@ -172,7 +205,7 @@ var commands = {
   },
   branch: function (branch) {
     var onbranch = false
-    if(!branch) {
+    if(!branch) { // list branches
       for(var i in this.repo.branches) {
         var b = this.current == i ? '*' : ''
         console.log(i, b) 
@@ -183,7 +216,7 @@ var commands = {
     }
     else {
       this.repo.branch(branch, this.current)
-      this.current = branch
+      //remember, git does not change branches. you have to checkout.
       this.save(function () {
         console.log('created branch', branch)
       })
@@ -195,7 +228,7 @@ var commands = {
       .map(function (id) {
       
         var commit = state.repo.get(id)
-        console.log(commit.id, commit.parent, new Date(commit.timestamp))
+        logCommit(commit)
       }) 
   },
   diff: function (commitish1, commitish2) {
@@ -239,7 +272,7 @@ var commands = {
       throw new Error('expected arg: at least one commitish to merge')
     branches.unshift(this.current)
     console.log('merging', branches)
-    var commit = this.repo.merge (branches)
+    var commit = this.repo.merge (branches, this.meta())
     console.log(commit)
     this.save(commit, function () {  
      commands.checkout.call(self, commit.id)
@@ -255,6 +288,7 @@ if(cmd == 'init')
 else if(commands[cmd]) {
   var state = findDir()
   state.load(function (err) {
+    state.opts = optimist.argv
     if(err) throw err
     commands[cmd].apply(state, args)
   })
