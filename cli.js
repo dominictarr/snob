@@ -234,17 +234,17 @@ var commands = {
   },
   merge: function () {
     var branches = [].slice.call(args)
+    var self = this
     if(!args.length)
       throw new Error('expected arg: at least one commitish to merge')
     branches.unshift(this.current)
     console.log('merging', branches)
     var commit = this.repo.merge (branches)
     console.log(commit)
-    this.save(commit, function () {
-      
+    this.save(commit, function () {  
+     commands.checkout.call(self, commit.id)
+    })
 
-    })  
- //   commands.checkout.call(this, commit.id)
   }
 }
 

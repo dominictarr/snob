@@ -1,5 +1,5 @@
 module.exports = function (deps) {
-var a = deps.adiff
+var a = deps.diff
 var hash = deps.hash
 // reimplementing git, because I'm insane.
 
@@ -19,6 +19,7 @@ function map(obj, itr) {
 function copy(obj) {
   return map(obj, function(e) {return e})
 }
+
 function keys (obj) {
   var ks = []
   for (var k in obj)
@@ -71,9 +72,7 @@ Repository.prototype = {
     var head = this.checkout(parent)
     if('object' !== typeof world)
       world = this.checkout(world)
-    return map(world, function (b, f) {
-      return a.diff(head[f] || [], b)
-    })
+    return a.diff(head, world)
   },
   revlist: function (id) {
     var commit = this.get(id)
@@ -126,13 +125,7 @@ Repository.prototype = {
     var checkouts = branches.map(function (e) {
       return self.checkout(e)
     })
-    commit.changes = map(checkouts[1], function (obj, key) {
-      var collect = checkouts.map(function (e) {
-        return e[key]
-      })
-      return a.diff3(collect)
-    })
-    //TODO build the commit, and stick it in.
+    commit.changes = a.diff3(checkouts)
     
     commit.merged = branches
     commit.parent = this.getId(branches[0])
@@ -146,13 +139,13 @@ Repository.prototype = {
     return commit
   },
   checkout: function (commitish) {
+    //idea: cache recently hit checkouts
+    //will improve performance of large merges
     if(commitish == null)
       return {}
     var commit = this.get(commitish)
     var state = this.checkout(commit.parent)
-    return map(commit.changes, function (change, key) {
-      return a.patch(state[key] || [], change)
-    })
+    return a.patch(state, commit.changes)
   },
   heads: function () {
     var heads = {}
@@ -165,5 +158,4 @@ Repository.prototype = {
 }
 
 return Repository
-
 }

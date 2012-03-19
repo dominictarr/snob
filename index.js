@@ -4,7 +4,7 @@
 
 */
 
-var a = require('adiff')
+var a = require('./xdiff')
 
 var createHash = require('crypto').createHash 
 
@@ -13,7 +13,7 @@ function hash (obj) {
 }
 
 module.exports = require('./snob')({
-  adiff: a,
+  diff: a,
   hash: hash
 })
 
