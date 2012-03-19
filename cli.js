@@ -233,13 +233,13 @@ var commands = {
   help: function(cmd) {
       var cmds = {
           "init" : "create a repo and persist it",
-          "save" : "commits in an append only log save state in a json file just"
-            +"needs branches and current checkout commit",
+          "diff": "commitish1 commitish2",
           "commit": "file save the current file in a new commit",
           "checkout": "commitish (commitish = commit/tag/branch)",
           "tag": "name commitish",
           "merge" : "commitish1 commitish2 || current_branch",
-          "branch" : "branchname"
+          "branch" : "branchname",
+          "heads" : "list heads"
       };
       if (cmd) {
           console.log(cmd +" "+ cmds[cmd]);
