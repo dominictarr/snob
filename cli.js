@@ -229,7 +229,7 @@ var commands = {
 
     })  
  //   commands.checkout.call(this, commit.id)
-  }
+  },
   help: function(cmd) {
       var cmds = {
           "init" : "create a repo and persist it",
