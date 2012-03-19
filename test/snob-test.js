@@ -1,7 +1,6 @@
 
 var assert = require('assert')
 var Repo = require('../')
-
 var snob = new Repo()
 var world
 var init = snob.commit(world = {
