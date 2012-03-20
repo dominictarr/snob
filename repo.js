@@ -112,8 +112,9 @@ module.exports = function (deps) {
    addCommits: function (commits) {
       //iterate through commits
       var self = this
+      console.log(commits)
       commits.forEach(function (e) {
-        if(self.commits[e.id]
+        if(self.commits[e.id]) return
         if(self.commits[e.parent] || e.parent == null)
           self.commits[e.id] = e
         else
