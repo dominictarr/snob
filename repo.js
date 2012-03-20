@@ -78,9 +78,24 @@ module.exports = function (deps) {
       return a.diff(head, world)
     },
     revlist: function (id) {
+      /*
       var commit = this.get(id)
       if(!commit) return []
       return this.revlist(commit.parent).concat(id)
+      */
+      var revlist = []
+      var self = this
+      function recurse (id) {
+        if(~revlist.indexOf(id) || id == null) return
+        var commit = self.get(id)
+        if(!commit.merged) //one parent
+          recurse(commit.parent)
+        else
+          commit.merged.forEach(recurse)
+        revlist.push(id)
+      }
+      recurse(id)
+      return revlist
     },
     concestor: function (heads) { //a list of commits you want to merge
       if(arguments.length > 1)

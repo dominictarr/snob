@@ -38,17 +38,25 @@ var branch = snob.commit(_world, {
   })
 
 assert.equal(branch.depth, 2)
-console.log(branch)
+
+assert.deepEqual(snob.revlist(branch.id), [init.id, branch.id])
 
 var concestor = snob.concestor(branch.id, second.id)
 
 assert.equal(concestor, init.id)
-console.log(concestor)
 
-var merged = snob.merge([branch.id, second.id], {message: 'merge1'})
+var merged = snob.merge([branch.id, second.id], {message: 'merged'})
 
 console.log(merged)
 assert.equal(3, merged.depth)
+
+var readable = snob.revlist(merged.id).map(function (id) {
+  return snob.get(id).message
+})
+
+assert.deepEqual(readable, ['init', 'branch', 'second', 'merged'])
+
+assert.deepEqual(snob.revlist(merged.id), [init.id, branch.id, second.id, merged.id])
 
 var world3 = snob.checkout(merged.id)
 
