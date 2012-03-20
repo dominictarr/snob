@@ -110,13 +110,17 @@ module.exports = function (deps) {
       return revlist[l]
     },
     ancestors: function (heads) {//heads, from a remote instance
+      if(!Array.isArray(heads))
+        throw new Error('expected ' + JSON.stringify(heads) + ' to be an Array')
       heads = heads.slice()
       var ancestors = {} // by returning a object it will be easier to test if something is in the set.
       var self = this
       function getAncestors (h) {
         if(ancestors[h]) return
         ancestors[h] = 1
-        getAncestors(self.get(h).parent)
+        var commit = self.get(h)
+        if(commit.parent)
+          getAncestors(commit.parent)
       }
       heads.forEach(getAncestors)
       return ancestors
@@ -124,12 +128,15 @@ module.exports = function (deps) {
     // MUST return commits in topolgical order. 
     // so a repo adding them will know about the parent of a new commit (because it's a head they sent, or it's a commit they've just added)
     decendants: function (heads) {
+      if(!Array.isArray(heads))
+        throw new Error('expected ' + JSON.stringify(heads) + ' to be an Array')
       var ancestors = this.ancestors(heads)
-      var heads = this.heads()
+      var heads = keys(this.heads())
       var decendants = []
       var seen = {}
-      var self
+      var self = this
       function getDecendants(h) {
+        if(!h) return
         if(ancestors[h]) return
         if(seen[h]) return // is this faster than decendants.indexOf ?
         seen[h] = 1
@@ -138,12 +145,13 @@ module.exports = function (deps) {
         getDecendants(commit.parent) 
       }
       heads.forEach(getDecendants)
+      return decendants
     },
-    addCommits: function (commits) {
+    add: function (commits) {
       //iterate through commits
       var self = this
       commits.forEach(function (e) {
-        if(self.commits[e.id]
+        if(self.commits[e.id]) return
         if(self.commits[e.parent] || e.parent == null)
           self.commits[e.id] = e
         else

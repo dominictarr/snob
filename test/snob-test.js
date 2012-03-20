@@ -54,4 +54,3 @@ var world3 = snob.checkout(merged.id)
 
 console.log(world3)
 
-
