@@ -7,21 +7,6 @@ var optimist = require('optimist')
 
 // just for a joke, lets add a CLI so that snob can be self hosting.
 
-/*
-  COMMANDS
-
-    init // create a repo and persist it.
-      save commits in an append only log
-      save state in a json file
-      just needs branches,
-      and current checkout commit
-    commit file... save the current file in a new commit
-    checkout commitish (commitish = commit/tag/branch)
-    tag name commitish
-    merge commitish1 commitish2 || current_branch 
-    branch branchname
-
-*/
 function Snob (dir) {
   this.dir = dir
   this.repo = new Repo()
@@ -289,6 +274,26 @@ var commands = {
      commands.checkout.call(self, commit.id)
     })
 
+  },
+  help: function(cmd) {
+      var cmds = {
+          "init" : "create a repo and persist it",
+          "diff": "commitish1 commitish2",
+          "commit": "file save the current file in a new commit",
+          "checkout": "commitish (commitish = commit/tag/branch)",
+          "tag": "name commitish",
+          "merge" : "commitish1 commitish2 || current_branch",
+          "branch" : "branchname",
+          "heads" : "list heads"
+      };
+      if (cmd) {
+          console.log(cmd +" "+ cmds[cmd]);
+      } else {
+          console.log("Usage:");
+          for(var c in cmds) {
+              console.log(c +" "+ cmds[c]);
+          }
+      }
   }
 }
 
@@ -303,4 +308,6 @@ else if(commands[cmd]) {
     if(err) throw err
     commands[cmd].apply(state, args)
   })
+} else {
+    commands["help"].apply(state,args);
 }
