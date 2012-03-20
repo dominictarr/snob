@@ -47,17 +47,21 @@ assert.equal(concestor, init.id)
 
 var merged = snob.merge([branch.id, second.id], {message: 'merged'})
 
+assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
+
 console.log(merged)
 assert.equal(3, merged.depth)
-
-var readable = snob.revlist(merged.id).map(function (id) {
+var rl = snob.revlist(merged.id)
+var readable = rl.map(function (id) {
   return snob.get(id).message
 })
 
 assert.deepEqual(readable, ['init', 'branch', 'second', 'merged'])
 
-assert.deepEqual(snob.revlist(merged.id), [init.id, branch.id, second.id, merged.id])
+assert.deepEqual(rl, [init.id, branch.id, second.id, merged.id])
 
+assert.ok(snob.isFastForward(branch.id, rl))
+assert.deepEqual(snob.isFastForward(branch.id, rl), [second.id, merged.id])
 var world3 = snob.checkout(merged.id)
 
 console.log(world3)
