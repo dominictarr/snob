@@ -109,37 +109,7 @@ module.exports = function (deps) {
         find(heads.shift())
       return revlist[l]
     },
-    ancestors: function (heads) {//heads, from a remote instance
-      heads = heads.slice()
-      var ancestors = {} // by returning a object it will be easier to test if something is in the set.
-      var self = this
-      function getAncestors (h) {
-        if(ancestors[h]) return
-        ancestors[h] = 1
-        getAncestors(self.get(h).parent)
-      }
-      heads.forEach(getAncestors)
-      return ancestors
-    },
-    // MUST return commits in topolgical order. 
-    // so a repo adding them will know about the parent of a new commit (because it's a head they sent, or it's a commit they've just added)
-    decendants: function (heads) {
-      var ancestors = this.ancestors(heads)
-      var heads = this.heads()
-      var decendants = []
-      var seen = {}
-      var self
-      function getDecendants(h) {
-        if(ancestors[h]) return
-        if(seen[h]) return // is this faster than decendants.indexOf ?
-        seen[h] = 1
-        var commit = self.get(h)
-        decendants.unshift(commit) //unshifting will mean that the list starts with a commit that is a direct decendant of a head.
-        getDecendants(commit.parent) 
-      }
-      heads.forEach(getDecendants)
-    },
-    addCommits: function (commits) {
+   addCommits: function (commits) {
       //iterate through commits
       var self = this
       commits.forEach(function (e) {
