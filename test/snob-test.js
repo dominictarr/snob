@@ -72,9 +72,10 @@ assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
 // where branch is a name ("master") that refurs to different commits
 // on each end. down the road, snob will cache this, to avoid a 
 // network-round-trip.
-console.log('push master', snob2.branches)
 snob.push(snob2, 'master')
+snob3.pull(snob, 'master')
 
+assert.deepEqual(snob3.commits, snob.commits)
 
 console.log(merged)
 assert.equal(3, merged.depth)

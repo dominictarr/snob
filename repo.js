@@ -119,13 +119,33 @@ module.exports = function (deps) {
       remote.addCommits(ff, branch) //will send just the ff commits.
       return ff
     },
-    pull: function (remote, branch) {
+    pull: function (remote, branch, since) {
       //add the new commits in remote branch,
       //then merge with local branch.
       //assume that remote branch won't be a fast-forward,
       //but we still need to get it's new commits after our head.
       //we need the remote branch commits that are not ancestors of 
       //local branch
+      /*
+        how does this work?
+        I think this is where caching remote heads comes in.
+        when I pull, I request items since i last heard from them.
+
+        I cache this, against an id so that they don't need to send all commits.
+
+        otherwise, remote should just send all commits.
+        implement that first.
+      */
+      var revs = remote.getRevs(branch, since)
+      var revlist = revs.map(function (e) { return e.id })
+      //if remote has sent a ff, don't need to merge.
+      if(this.isFastForward(branch, revlist))
+        this.addCommits(revs, branch)
+      else {
+        var rHead = revs[revs.length -1]
+        this.addCommits(revs)
+        this.merge([branch, rHead])
+      }
     },
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
