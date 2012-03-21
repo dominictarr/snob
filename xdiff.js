@@ -56,7 +56,7 @@ module.exports = {
     var changes = {}
     keys.forEach(function (k) {
       var collect = branches.map(function (o) {
-        return o[k]
+        return o[k] || []
       })
       changes[k] = a.diff3(collect)
     })
