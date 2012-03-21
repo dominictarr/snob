@@ -136,7 +136,6 @@ module.exports = function (deps) {
       } else {
         var rHead = revs[revs.length -1].id
         this.addCommits(revs)
-        console.log(branch, rHead)
         this.merge([branch, rHead])
       }
       this.remote(remote.id, branch, id) 
