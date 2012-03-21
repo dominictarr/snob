@@ -10,6 +10,7 @@ var init = snob.commit(world = {
 
 assert.equal(init.depth, 1)
 console.log(init)
+assert.ok(snob.id)
 
 var _world = snob.checkout(init.id)
 
@@ -31,11 +32,31 @@ assert.deepEqual(
 
 var snob2 = new Repo()
 var snob3 = new Repo()
+
+assert.ok(snob2.id)
+assert.ok(snob3.id)
 //we're not using branches in this test.
 //however, we can use a commit like a branch.
 //since a branch is just a pointer to a commit.
 snob2.clone(snob, 'master') // this should just pull all the commits.
 snob3.clone(snob, 'master')
+
+function assertSynced (local, remote) {
+
+  assert.equal(
+    local.remote(remote.id, 'master'), 
+    remote.branch('master')
+  )
+
+  assert.equal(
+    remote.remote(local.id, 'master'), 
+    local.branch('master')
+  )
+
+}
+
+assertSynced(snob, snob2)
+assertSynced(snob, snob3)
 
 assert.deepEqual(snob2.commits, snob.commits)
 assert.deepEqual(snob3.commits, snob.commits)
@@ -72,8 +93,35 @@ assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
 // where branch is a name ("master") that refurs to different commits
 // on each end. down the road, snob will cache this, to avoid a 
 // network-round-trip.
+var snob4 = new Repo()
+snob4.clone(snob3, 'master')
+assertSynced(snob4, snob3)
 snob.push(snob2, 'master')
+assertSynced(snob, snob2)
 snob3.pull(snob, 'master')
+assertSynced(snob, snob3)
+
+//! now in a non ff pull, the local will merge the incoming revs, so the repo's will be out of sync
+
+world.whatever = ['everything', 'changes']
+
+console.log(snob4.commit(world, {message: 'whatever', parent: 'master'}))
+
+console.log(snob.checkout('master'))
+console.log(snob4.checkout('master'))
+snob4.pull(snob, 'master')
+console.log(snob4.getRevs('master'))
+/*
+  since snob4's pull is was not a ff,
+  it the repo's should not be synced.
+  the remote will think 4 has the commit it sent,
+  but 4 will be correct about snob 0
+*/
+
+assert.equal(snob4.remote(snob.id, 'master'), snob.branch('master'))
+assert.notEqual(snob.remote(snob4.id, 'master'), snob4.branch('master'))
+assert.equal(snob.remote(snob4.id, 'master'), snob.branch('master'))
+
 assert.deepEqual(snob3.revlist('master'), snob.revlist('master'))
 
 console.log(merged)

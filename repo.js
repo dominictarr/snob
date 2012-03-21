@@ -10,6 +10,8 @@ module.exports = function (deps) {
     this.tags = {}
     this.get = this.get.bind(this)
     this.getId = this.getId.bind(this)
+    this.id = '#'+Math.random()
+    this.remotes = {}
   }
 
   function map(obj, itr) {
@@ -70,7 +72,7 @@ module.exports = function (deps) {
     branch: function (name, commitish) {
       // do not save this as a branch if it's actually a commit, or a tag.
       if(this.commits[name] || this.tags[name]) return
-      return this.branches[name] = this.getId(commitish)
+      return this.branches[name] = this.getId(commitish) || this.branches[name]
     },
     diff: function (parent, world) {
       var head = this.checkout(parent)
@@ -104,30 +106,41 @@ module.exports = function (deps) {
         throw new Error('can only clone on an empty repo')
       if(!branch)
         throw new Error('expect branch to clone')
-      this.addCommits(remote.getRevs(branch), branch)
+      var revs = remote.getRevs(branch)
+      var id = revs[revs.length - 1].id
+      this.addCommits(revs, branch)
       //save the remote head.
+      this.remote(remote.id, branch, id)
+      remote.remote(this.id, branch, id)
     },
     push: function (remote, branch) {
       var revlist = this.revlist(branch)
-      var ff = remote.isFastForward(remote.getId(branch), revlist)
+      var ff = remote.isFastForward(branch, revlist)
       if(!ff)
         throw new Error('cannot push because is not a fast-forward. pull first')
       remote.addCommits(ff.map(this.get), branch) //will send just the ff commits.
       //save the remote head.
+      var id = revlist[revlist.length - 1]
+      this.remote(remote.id, branch, id) 
+      remote.remote(this.id, branch, id)
       return ff
     },
-    pull: function (remote, branch, since) {
-      var revs = remote.getRevs(branch, since)
+    pull: function (remote, branch) {
+      var revs = remote.getRevs(branch)
       var revlist = revs.map(function (e) { return e.id })
       //if remote has sent a ff, don't need to merge.
-      var ff
+      var ff 
+      var id = revlist[revlist.length - 1] 
       if(ff = this.isFastForward(branch, revlist)) {
         this.addCommits(revs, branch)
       } else {
-        var rHead = revs[revs.length -1]
+        var rHead = revs[revs.length -1].id
         this.addCommits(revs)
+        console.log(branch, rHead)
         this.merge([branch, rHead])
       }
+      this.remote(remote.id, branch, id) 
+      remote.remote(this.id, branch, id)
     },
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
@@ -212,6 +225,11 @@ module.exports = function (deps) {
       var commit = this.get(commitish)
       var state = this.checkout(commit.parent)
       return a.patch(state, commit.changes)
+    },
+    remote: function (id, branch, commit) {
+      var remotes = 
+        this.remotes[id] = this.remotes[id] || {}
+      return remotes[branch] = commit || remotes[branch]
     }
   }
 
