@@ -97,6 +97,36 @@ module.exports = function (deps) {
       recurse(id)
       return revlist
     },
+    getRevs: function (head) {
+      var self = this
+      return this.revlist(head).map(function (id) {
+        return self.get(id) 
+      })
+    },
+    clone: function (remote, branch) {
+      for(var j in this.commits)
+        throw new Error('can only clone on an empty repo')
+      console.log('revs', remote.getRevs(branch))
+      this.addCommits(remote.getRevs(branch), branch)
+    },
+    push: function (remote, branch, rBranch) {
+      if(!rBranch) rBranch = remote.getId(branch)
+      var revlist = this.revlist(branch)
+      console.log(revlist, rBranch)
+      var ff = remote.isFastForward(remote.getId(rBranch), revlist)
+      if(!ff)
+        throw new Error('cannot push because is not a fast-forward. pull first')
+      remote.addCommits(ff, branch) //will send just the ff commits.
+      return ff
+    },
+    pull: function (remote, branch) {
+      //add the new commits in remote branch,
+      //then merge with local branch.
+      //assume that remote branch won't be a fast-forward,
+      //but we still need to get it's new commits after our head.
+      //we need the remote branch commits that are not ancestors of 
+      //local branch
+    },
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
       // revlist two is a ff if head is an ancestor.
@@ -104,6 +134,7 @@ module.exports = function (deps) {
       //remove the matchng head of the revlist 
       var _revlist = this.revlist(head)
       revlist = revlist.slice()
+      //got a feeling that this isn't right.
       while(_revlist[0] == revlist[0])
         _revlist.shift(), revlist.shift()
       return revlist
@@ -136,10 +167,9 @@ module.exports = function (deps) {
         find(heads.shift())
       return revlist[l]
     },
-   addCommits: function (commits) {
+   addCommits: function (commits, branch) {
       //iterate through commits
       var self = this
-      console.log(commits)
       commits.forEach(function (e) {
         if(self.commits[e.id]) return
         if(self.commits[e.parent] || e.parent == null)
@@ -147,6 +177,7 @@ module.exports = function (deps) {
         else
           throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
       })
+      if(branch) this.branch(branch, commits[commits.length - 1])
     },
     merge: function (branches, meta) { //branches...
       // TODO, the interesting problem here is to handle async conflict resolution.
