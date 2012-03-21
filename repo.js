@@ -8,6 +8,8 @@ module.exports = function (deps) {
     this.commits = {}
     this.branches = {}
     this.tags = {}
+    this.get = this.get.bind(this)
+    this.getId = this.getId.bind(this)
   }
 
   function map(obj, itr) {
@@ -62,13 +64,12 @@ module.exports = function (deps) {
       return (this.get(commitish) || {id:null}).id 
     },
     tag: function (name, commitish) {
+      if(this.commits[name] || this.branches[name]) return
       this.tags[name] = this.getId(commitish) 
     },
     branch: function (name, commitish) {
       // do not save this as a branch if it's actually a commit, or a tag.
-      if(this.commits[name] || this.tags[name]) {
-        return this.getId(commitish)
-      }
+      if(this.commits[name] || this.tags[name]) return
       return this.branches[name] = this.getId(commitish)
     },
     diff: function (parent, world) {
@@ -96,10 +97,7 @@ module.exports = function (deps) {
       return revlist
     },
     getRevs: function (head) {
-      var self = this
-      return this.revlist(head).map(function (id) {
-        return self.get(id) 
-      })
+      return this.revlist(head).map(this.get)
     },
     clone: function (remote, branch) {
       for(var j in this.commits)
@@ -114,9 +112,7 @@ module.exports = function (deps) {
       var ff = remote.isFastForward(remote.getId(branch), revlist)
       if(!ff)
         throw new Error('cannot push because is not a fast-forward. pull first')
-      var self = this  
-      var revs = ff.map(function (e) { return self.get(e) })
-      remote.addCommits(revs, branch) //will send just the ff commits.
+      remote.addCommits(ff.map(this.get), branch) //will send just the ff commits.
       //save the remote head.
       return ff
     },
@@ -161,9 +157,6 @@ module.exports = function (deps) {
       var revlist = this.revlist(first)
       var commits = this.commits
       var l =  -1
-      function last (a) {
-        return a[a.length - 1]
-      }
       function find (h) {
         var i = revlist.lastIndexOf(h, ~l ? l : null)
         if(i !== -1) l = i
@@ -187,20 +180,11 @@ module.exports = function (deps) {
       if(branch) this.branch(branch, commits[commits.length - 1].id)
     },
     merge: function (branches, meta) { //branches...
-      // TODO, the interesting problem here is to handle async conflict resolution.
-      // hmm, maybe just mark the conflicts but do not update the branch?
-      // afterall, this isn't really for SCM, the usecases are usally gonna take automatic resolves.
-   
-      // find the concestor of the branches,
-      // then calculate an n-way merge of all the checkouts.
       var self = this
       var mine = branches[0]
-      branches = branches.map(function (e) {
-        return self.getId(e)
-      })
+      branches = branches.map(this.getId)
       var concestor = this.concestor(branches)
       branches.splice(1, 0, concestor)
-      var self = this
       var commit = meta ? copy(meta) : {}
       var checkouts = branches.map(function (e) {
         return self.checkout(e)
@@ -228,14 +212,6 @@ module.exports = function (deps) {
       var commit = this.get(commitish)
       var state = this.checkout(commit.parent)
       return a.patch(state, commit.changes)
-    },
-    heads: function () {
-      var heads = {}
-      heads = copy(this.commits)
-      for (var k in this.commits)
-        delete heads[this.commits[k].parent] 
-      return heads 
-      //return commits that have no children
     }
   }
 
