@@ -74,8 +74,7 @@ assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
 // network-round-trip.
 snob.push(snob2, 'master')
 snob3.pull(snob, 'master')
-
-assert.deepEqual(snob3.commits, snob.commits)
+assert.deepEqual(snob3.revlist('master'), snob.revlist('master'))
 
 console.log(merged)
 assert.equal(3, merged.depth)

@@ -77,17 +77,14 @@ module.exports = function (deps) {
         world = this.checkout(world)
       return a.diff(head, world)
     },
-    revlist: function (id) {
-      /*
-      var commit = this.get(id)
-      if(!commit) return []
-      return this.revlist(commit.parent).concat(id)
-      */
+    revlist: function (id, since) {
       id = this.getId(id) // force to commit
       var revlist = []
+      var exclude = since ? this.revlist(since) : []
       var self = this
       function recurse (id) {
-        if(~revlist.indexOf(id) || id == null) return
+        if( ~revlist.indexOf(id) || !id) return
+        if(~exclude.indexOf(id)) return
         var commit = self.get(id)
         if(!commit.merged) //one parent
           recurse(commit.parent)
@@ -110,38 +107,27 @@ module.exports = function (deps) {
       if(!branch)
         throw new Error('expect branch to clone')
       this.addCommits(remote.getRevs(branch), branch)
+      //save the remote head.
     },
     push: function (remote, branch) {
       var revlist = this.revlist(branch)
       var ff = remote.isFastForward(remote.getId(branch), revlist)
       if(!ff)
         throw new Error('cannot push because is not a fast-forward. pull first')
-      remote.addCommits(ff, branch) //will send just the ff commits.
+      var self = this  
+      var revs = ff.map(function (e) { return self.get(e) })
+      remote.addCommits(revs, branch) //will send just the ff commits.
+      //save the remote head.
       return ff
     },
     pull: function (remote, branch, since) {
-      //add the new commits in remote branch,
-      //then merge with local branch.
-      //assume that remote branch won't be a fast-forward,
-      //but we still need to get it's new commits after our head.
-      //we need the remote branch commits that are not ancestors of 
-      //local branch
-      /*
-        how does this work?
-        I think this is where caching remote heads comes in.
-        when I pull, I request items since i last heard from them.
-
-        I cache this, against an id so that they don't need to send all commits.
-
-        otherwise, remote should just send all commits.
-        implement that first.
-      */
       var revs = remote.getRevs(branch, since)
       var revlist = revs.map(function (e) { return e.id })
       //if remote has sent a ff, don't need to merge.
-      if(this.isFastForward(branch, revlist))
+      var ff
+      if(ff = this.isFastForward(branch, revlist)) {
         this.addCommits(revs, branch)
-      else {
+      } else {
         var rHead = revs[revs.length -1]
         this.addCommits(revs)
         this.merge([branch, rHead])
@@ -191,6 +177,7 @@ module.exports = function (deps) {
       //iterate through commits
       var self = this
       commits.forEach(function (e) {
+        if('object' !== typeof e) throw new Error(e + ' is not a commit')
         if(self.commits[e.id]) return
         if(self.commits[e.parent] || e.parent == null)
           self.commits[e.id] = e
