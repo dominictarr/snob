@@ -83,6 +83,7 @@ module.exports = function (deps) {
       if(!commit) return []
       return this.revlist(commit.parent).concat(id)
       */
+      id = this.getId(id) // force to commit
       var revlist = []
       var self = this
       function recurse (id) {
@@ -106,14 +107,13 @@ module.exports = function (deps) {
     clone: function (remote, branch) {
       for(var j in this.commits)
         throw new Error('can only clone on an empty repo')
-      console.log('revs', remote.getRevs(branch))
+      if(!branch)
+        throw new Error('expect branch to clone')
       this.addCommits(remote.getRevs(branch), branch)
     },
-    push: function (remote, branch, rBranch) {
-      if(!rBranch) rBranch = remote.getId(branch)
+    push: function (remote, branch) {
       var revlist = this.revlist(branch)
-      console.log(revlist, rBranch)
-      var ff = remote.isFastForward(remote.getId(rBranch), revlist)
+      var ff = remote.isFastForward(remote.getId(branch), revlist)
       if(!ff)
         throw new Error('cannot push because is not a fast-forward. pull first')
       remote.addCommits(ff, branch) //will send just the ff commits.
@@ -177,7 +177,7 @@ module.exports = function (deps) {
         else
           throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
       })
-      if(branch) this.branch(branch, commits[commits.length - 1])
+      if(branch) this.branch(branch, commits[commits.length - 1].id)
     },
     merge: function (branches, meta) { //branches...
       // TODO, the interesting problem here is to handle async conflict resolution.
@@ -187,10 +187,10 @@ module.exports = function (deps) {
       // find the concestor of the branches,
       // then calculate an n-way merge of all the checkouts.
       var self = this
-      branches.map(function (e) {
+      var mine = branches[0]
+      branches = branches.map(function (e) {
         return self.getId(e)
       })
-      var mine = branches[0]
       var concestor = this.concestor(branches)
       branches.splice(1, 0, concestor)
       var self = this
@@ -201,7 +201,8 @@ module.exports = function (deps) {
       commit.changes = a.diff3(checkouts)
       if(!commit.changes)
         throw new Error('there are no changes') 
-      commit.merged = branches
+      commit.merged = branches.slice()
+      commit.merged.splice(1,1) //concestor should not be in merged
       commit.parent = this.getId(branches[0])
       commit.depth = this.get(branches[0]).depth + 1
       commit.timestamp = Date.now()
