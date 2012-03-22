@@ -98,8 +98,8 @@ module.exports = function (deps) {
       recurse(id)
       return revlist
     },
-    getRevs: function (head) {
-      return this.revlist(head).map(this.get)
+    getRevs: function (head, since) {
+      return this.revlist(head, since).map(this.get)
     },
     clone: function (remote, branch) {
       for(var j in this.commits)
@@ -114,11 +114,12 @@ module.exports = function (deps) {
       remote.remote(this.id, branch, id)
     },
     push: function (remote, branch) {
-      var revlist = this.revlist(branch)
-      var ff = remote.isFastForward(branch, revlist)
+      var rId = this.remote(remote.id, branch)
+      var revlist = this.revlist(branch, rId)
+      var ff = this.isFastForward(rId, revlist)
       if(!ff)
         throw new Error('cannot push because is not a fast-forward. pull first')
-      remote.addCommits(ff.map(this.get), branch) //will send just the ff commits.
+      remote.addCommits(revlist.map(this.get), branch) //will send just the ff commits.
       //save the remote head.
       var id = revlist[revlist.length - 1]
       this.remote(remote.id, branch, id) 
@@ -126,14 +127,16 @@ module.exports = function (deps) {
       return ff
     },
     pull: function (remote, branch) {
-      var revs = remote.getRevs(branch)
+      var rId = this.remote(remote.id, branch)
+      var revs = remote.getRevs(branch, rId)
       var revlist = revs.map(function (e) { return e.id })
       //if remote has sent a ff, don't need to merge.
-      var ff 
       var id = revlist[revlist.length - 1] 
-      if(ff = this.isFastForward(branch, revlist)) {
+      if(this.isFastForward(branch, revs)) {
+        console.log('IS FF', revs)
         this.addCommits(revs, branch)
       } else {
+        console.log('! FF')
         var rHead = revs[revs.length -1].id
         this.addCommits(revs)
         this.merge([branch, rHead])
@@ -144,6 +147,16 @@ module.exports = function (deps) {
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
       // revlist two is a ff if head is an ancestor.
+      head = this.getId(head)
+      console.log('REVLIST', revlist)
+      for(var i in revlist) {
+        var rev = (
+          'object' == typeof revlist[i] 
+            ? revlist[i] : this.get(revlist[i])
+        )
+        if(rev && rev.parent == head) return true 
+      }
+      return false
       if(!~revlist.indexOf(this.getId(head))) return false
       //remove the matchng head of the revlist 
       var _revlist = this.revlist(head)

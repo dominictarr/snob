@@ -35,9 +35,9 @@ var snob3 = new Repo()
 
 assert.ok(snob2.id)
 assert.ok(snob3.id)
-//we're not using branches in this test.
-//however, we can use a commit like a branch.
-//since a branch is just a pointer to a commit.
+
+// clone always sends all commits for a branch.
+
 snob2.clone(snob, 'master') // this should just pull all the commits.
 snob3.clone(snob, 'master')
 
@@ -96,8 +96,22 @@ assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
 var snob4 = new Repo()
 snob4.clone(snob3, 'master')
 assertSynced(snob4, snob3)
+
+// what commits will snob push -> snob2
+// branch, merged. 
+var revs, rHead
+assert.deepEqual(revs = snob.getRevs('master', rHead = snob.remote(snob2.id, 'master')), [branch, merged])
+
+assert.ok(snob.isFastForward(rHead, revs))
+
 snob.push(snob2, 'master')
 assertSynced(snob, snob2)
+
+var revs, rHead
+assert.deepEqual(revs = snob.getRevs('master', rHead = snob.remote(snob3.id, 'master')), [branch, merged])
+
+assert.ok(snob3.isFastForward('master', revs))
+
 snob3.pull(snob, 'master')
 assertSynced(snob, snob3)
 
@@ -118,33 +132,46 @@ console.log(snob4.getRevs('master'))
   but 4 will be correct about snob 0
 */
 
-assert.equal(snob4.remote(snob.id, 'master'), snob.branch('master'))
-assert.notEqual(snob.remote(snob4.id, 'master'), snob4.branch('master'))
-assert.equal(snob.remote(snob4.id, 'master'), snob.branch('master'))
+assert.equal(
+  snob4.remote(snob.id, 'master'), 
+  snob.branch('master')
+)
+//4 merged what 
+assert.notEqual(
+  snob.remote(snob4.id, 'master'), 
+  snob4.branch('master')
+)
+assert.equal(
+  snob.remote(snob4.id, 'master'), 
+  snob.branch('master')
+)
+
+function messages(revs) {
+  return revs.map(function (item) {
+    return item.message
+  })
+}
+
+console.log(messages(snob3.getRevs('master')))
+console.log(messages(snob.getRevs('master')))
 
 assert.deepEqual(snob3.revlist('master'), snob.revlist('master'))
 
 console.log(merged)
 assert.equal(3, merged.depth)
-var rl = snob.revlist(merged.id)
-
-function messages(revlist) {
-  return rl.map(function (id) {
-    return snob.get(id).message
-  })
-}
+var rl = snob.getRevs(merged.id)
 
 var readable = messages(rl)
 
 assert.deepEqual(readable, ['init', 'second', 'branch', 'merged'])
 
-assert.deepEqual(rl, [init.id, second.id, branch.id, merged.id])
+assert.deepEqual(rl, [init, second, branch, merged])
 var ff = snob.isFastForward(second.id, rl)
 
-console.log(messages(ff))
 assert.ok(ff)
+var ffrevs = snob.revlist(merged.id, second.id)
 
-assert.deepEqual(ff, [branch.id, merged.id])
+assert.deepEqual(ffrevs, [branch.id, merged.id])
 
 var world3 = snob.checkout('master')
 console.log(world3)
