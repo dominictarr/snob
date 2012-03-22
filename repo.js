@@ -101,48 +101,42 @@ module.exports = function (deps) {
     getRevs: function (head, since) {
       return this.revlist(head, since).map(this.get)
     },
+   send: function (rId, branch) {
+      var revs = this.getRevs(branch, this.remote(rId, branch))
+      return revs
+    },
+    recieve: function (revs, branch, allowMerge) {
+      var ff = this.isFastForward(branch, revs)
+      var id = revs[revs.length - 1].id
+      if(!allowMerge && !ff)
+        throw new Error('recieved non fast-forward. pull first')
+      if(ff) {
+        this.addCommits(revs, branch)
+      } else {
+        this.addCommits(revs)
+        this.merge([branch, id])
+      }
+      return id
+    },
     clone: function (remote, branch) {
       for(var j in this.commits)
         throw new Error('can only clone on an empty repo')
       if(!branch)
         throw new Error('expect branch to clone')
-      var revs = remote.getRevs(branch)
-      var id = revs[revs.length - 1].id
-      this.addCommits(revs, branch)
-      //save the remote head.
+     
+      var id = this.recieve(remote.send(this.id, branch), branch, false)
       this.remote(remote.id, branch, id)
       remote.remote(this.id, branch, id)
     },
     push: function (remote, branch) {
-      var rId = this.remote(remote.id, branch)
-      var revlist = this.revlist(branch, rId)
-      var ff = this.isFastForward(rId, revlist)
-      if(!ff)
-        throw new Error('cannot push because is not a fast-forward. pull first')
-      remote.addCommits(revlist.map(this.get), branch) //will send just the ff commits.
-      //save the remote head.
-      var id = revlist[revlist.length - 1]
-      this.remote(remote.id, branch, id) 
+      var id = remote.recieve(this.send(remote.id, branch), branch, false)
       remote.remote(this.id, branch, id)
-      return ff
+      this.remote(remote.id, branch, id)
     },
     pull: function (remote, branch) {
-      var rId = this.remote(remote.id, branch)
-      var revs = remote.getRevs(branch, rId)
-      var revlist = revs.map(function (e) { return e.id })
-      //if remote has sent a ff, don't need to merge.
-      var id = revlist[revlist.length - 1] 
-      if(this.isFastForward(branch, revs)) {
-        console.log('IS FF', revs)
-        this.addCommits(revs, branch)
-      } else {
-        console.log('! FF')
-        var rHead = revs[revs.length -1].id
-        this.addCommits(revs)
-        this.merge([branch, rHead])
-      }
-      this.remote(remote.id, branch, id) 
+      var id = this.recieve(remote.send(this.id, branch), branch, true)
       remote.remote(this.id, branch, id)
+      this.remote(remote.id, branch, id)
     },
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
