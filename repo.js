@@ -142,7 +142,6 @@ module.exports = function (deps) {
       //return the nodes of revlist that fast-forward head.
       // revlist two is a ff if head is an ancestor.
       head = this.getId(head)
-      console.log('REVLIST', revlist)
       for(var i in revlist) {
         var rev = (
           'object' == typeof revlist[i] 
