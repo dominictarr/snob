@@ -157,18 +157,12 @@ module.exports = function (deps) {
           'object' == typeof revlist[i] 
             ? revlist[i] : this.get(revlist[i])
         )
-        if(rev && rev.parent == head) return true 
+        if(rev 
+        && rev.parent == head
+        || rev.merged 
+        && ~rev.merged.indexOf(head)) return true
       }
       return false
-      if(!~revlist.indexOf(this.getId(head))) return false
-      //remove the matchng head of the revlist 
-      var _revlist = this.revlist(head)
-      revlist = revlist.slice()
-      //got a feeling that this isn't right.
-      while(_revlist[0] == revlist[0])
-        _revlist.shift(), revlist.shift()
-      return revlist
-
     },
     concestor: function (heads) { //a list of commits you want to merge
       if(arguments.length > 1)
@@ -227,7 +221,7 @@ module.exports = function (deps) {
       commit.depth = this.get(branches[0]).depth + 1
       //set the timestamp to be one greater than the latest commit,
       //so that merge commits are deterministic
-      commit.timestamp = max(branches, function (e) { return e.timestamp }) + 1
+      commit.timestamp = max(branches, function (e) { return self.get(e).timestamp }) + 1
 
       commit.id = hash(commit)
 
