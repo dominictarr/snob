@@ -87,3 +87,7 @@ setInterval(function () {
 
 a.commit({list: ['crazy']})
 
+setInterval(function () {
+  a.data.list.push('?')
+  a.commit(a.data)
+}, 1e3)
