@@ -31,6 +31,16 @@ module.exports = function (deps) {
       ks.push(k)
     return ks
   }
+  
+  function max (ary, iter) {
+    var M = null
+    for(var k in ary) {
+      var m = iter(ary[k],k,ary)
+      if(M === null || m > M)
+        M = m
+    }
+    return M
+  }
 
   Repository.prototype = {
     commit: function (world, meta) {
@@ -200,7 +210,8 @@ module.exports = function (deps) {
     merge: function (branches, meta) { //branches...
       var self = this
       var mine = branches[0]
-      branches = branches.map(this.getId)
+      // ensure that merging the same branches produces the same merge commit.
+      branches = branches.map(this.getId).sort()
       var concestor = this.concestor(branches)
       branches.splice(1, 0, concestor)
       var commit = meta ? copy(meta) : {}
@@ -214,7 +225,9 @@ module.exports = function (deps) {
       commit.merged.splice(1,1) //concestor should not be in merged
       commit.parent = this.getId(branches[0])
       commit.depth = this.get(branches[0]).depth + 1
-      commit.timestamp = Date.now()
+      //set the timestamp to be one greater than the latest commit,
+      //so that merge commits are deterministic
+      commit.timestamp = max(branches, function (e) { return e.timestamp }) + 1
 
       commit.id = hash(commit)
 
