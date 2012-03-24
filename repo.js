@@ -159,6 +159,7 @@ module.exports = function (deps) {
         )
         if(rev 
         && rev.parent == head
+        || rev.id == head
         || rev.merged 
         && ~rev.merged.indexOf(head)) return true
       }
