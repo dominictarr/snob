@@ -1,7 +1,8 @@
 module.exports = function (deps) {
   var a = deps.diff
   var hash = deps.hash
-
+  var EventEmitter = require('events').EventEmitter
+  var u = require('./utils')
   // reimplementing git, because I'm insane.
 
   function Repository () {
@@ -14,35 +15,7 @@ module.exports = function (deps) {
     this.remotes = {}
   }
 
-  function map(obj, itr) {
-    var r = {}
-    for (var i in obj)
-      r[i] = itr(obj[i], i, obj)
-    return r
-  }
-
-  function copy(obj) {
-    return map(obj, function(e) {return e})
-  }
-
-  function keys (obj) {
-    var ks = []
-    for (var k in obj)
-      ks.push(k)
-    return ks
-  }
-  
-  function max (ary, iter) {
-    var M = null
-    for(var k in ary) {
-      var m = iter(ary[k],k,ary)
-      if(M === null || m > M)
-        M = m
-    }
-    return M
-  }
-
-  Repository.prototype = {
+  Repository.prototype = u.extend(new EventEmitter(), {
     commit: function (world, meta) {
       //meta is author, message, parent commit
       //this is the current state of the repo.
@@ -54,7 +27,7 @@ module.exports = function (deps) {
       // bundle with meta, add to commits 
       var branch = meta.parent //save the branch name
       meta.parent = this.getId(branch) 
-      var commit = copy(meta) // filter correct attributs only?
+      var commit = u.copy(meta) // filter correct attributs only?
       commit.changes = this.diff(meta.parent, world)
       if(!commit.changes)
         throw new Error('there are no changes') 
@@ -64,8 +37,8 @@ module.exports = function (deps) {
 
       // XXX make an error if the commits are empty !!! XXX 
 
-      this.commits[commit.id] = commit
-      this.branch(branch, commit.id)
+      this.addCommits([commit], branch)
+ 
       return commit
         // emit the new commit 
     },
@@ -111,20 +84,23 @@ module.exports = function (deps) {
     getRevs: function (head, since) {
       return this.revlist(head, since).map(this.get)
     },
-   send: function (rId, branch) {
+    send: function (rId, branch) {
       var revs = this.getRevs(branch, this.remote(rId, branch))
       return revs
     },
     recieve: function (revs, branch, allowMerge) {
       var ff = this.isFastForward(branch, revs)
-      var id = revs[revs.length - 1].id
+      var last = revs[revs.length - 1]
+      if(!last)
+        return //throw new Error('recieved empty revs')
+      var id = last.id
       if(!allowMerge && !ff)
         throw new Error('recieved non fast-forward. pull first')
       if(ff) {
         this.addCommits(revs, branch)
       } else {
         this.addCommits(revs)
-        this.merge([branch, id])
+        revs.push(this.merge([branch, id]))
       }
       return id
     },
@@ -183,6 +159,7 @@ module.exports = function (deps) {
       function find (h) {
         var i = revlist.lastIndexOf(h, ~l ? l : null)
         if(i !== -1) l = i
+        else if(!commits[h]) return //?
         else find(commits[h].parent)
       }
       while(heads.length)
@@ -192,15 +169,18 @@ module.exports = function (deps) {
    addCommits: function (commits, branch) {
       //iterate through commits
       var self = this
+      var revs = []
       commits.forEach(function (e) {
         if('object' !== typeof e) throw new Error(e + ' is not a commit')
         if(self.commits[e.id]) return
         if(self.commits[e.parent] || e.parent == null)
-          self.commits[e.id] = e
+          revs.push(self.commits[e.id] = e)
         else
           throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
       })
       if(branch) this.branch(branch, commits[commits.length - 1].id)
+      
+      this.emit('update', revs, branch)
     },
     merge: function (branches, meta) { //branches...
       var self = this
@@ -209,7 +189,7 @@ module.exports = function (deps) {
       branches = branches.map(this.getId).sort()
       var concestor = this.concestor(branches)
       branches.splice(1, 0, concestor)
-      var commit = meta ? copy(meta) : {}
+      var commit = meta ? u.copy(meta) : {}
       var checkouts = branches.map(function (e) {
         return self.checkout(e)
       })
@@ -222,12 +202,11 @@ module.exports = function (deps) {
       commit.depth = this.get(branches[0]).depth + 1
       //set the timestamp to be one greater than the latest commit,
       //so that merge commits are deterministic
-      commit.timestamp = max(branches, function (e) { return self.get(e).timestamp }) + 1
+      commit.timestamp = u.max(branches, function (e) { return self.get(e).timestamp }) + 1
 
       commit.id = hash(commit)
 
-      this.commits[commit.id] = commit
-      this.branch(mine, commit.id) // if this was merge( ['master', ...], ...) update the branch
+      this.addCommits([commit], mine)
       return commit
     },
     checkout: function (commitish) {
@@ -244,7 +223,7 @@ module.exports = function (deps) {
         this.remotes[id] = this.remotes[id] || {}
       return remotes[branch] = commit || remotes[branch]
     }
-  }
+  })
 
   return Repository
 }
