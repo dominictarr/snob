@@ -5,7 +5,7 @@
 */
 
 var a = require('./xdiff')
-
+var EventEmitter = require('events').EventEmitter
 var createHash = require('crypto').createHash 
 
 function hash (obj) {
@@ -14,6 +14,7 @@ function hash (obj) {
 
 module.exports = require('./repo')({
   diff: a,
-  hash: hash
+  hash: hash,
+  EventEmitter: EventEmitter
 })
 
