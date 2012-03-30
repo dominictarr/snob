@@ -16,7 +16,7 @@
     "node": "*"
   },
   "dependencies": {
-    "adiff": "0.1",
+    "adiff": "0.2",
     "optimist": "0.3"
    },
   "bin": {
