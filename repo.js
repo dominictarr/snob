@@ -100,7 +100,6 @@ module.exports = function (deps) {
         this.addCommits(revs, branch)
       } else {
         this.addCommits(revs)
-        console.log('CONCESTOR', this.concestor(branch, id))
         revs.push(this.merge([branch, id]))
       }
       return id
