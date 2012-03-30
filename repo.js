@@ -179,8 +179,8 @@ module.exports = function (deps) {
           throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
       })
       if(branch) this.branch(branch, commits[commits.length - 1].id)
-      
-      this.emit('update', revs, branch)
+      if(revs.length) 
+        this.emit('update', revs, branch)
     },
     merge: function (branches, meta) { //branches...
       var self = this
