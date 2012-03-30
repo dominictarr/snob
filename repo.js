@@ -100,6 +100,7 @@ module.exports = function (deps) {
         this.addCommits(revs, branch)
       } else {
         this.addCommits(revs)
+        console.log('CONCESTOR', this.concestor(branch, id))
         revs.push(this.merge([branch, id]))
       }
       return id
@@ -141,6 +142,12 @@ module.exports = function (deps) {
       }
       return false
     },
+    /*
+      I think there is a problem with the concestor
+      after repeated merges.
+
+      CONFIRMED. TODO write test.
+    */
     concestor: function (heads) { //a list of commits you want to merge
       if(arguments.length > 1)
         heads = [].slice.call(arguments)
@@ -157,10 +164,10 @@ module.exports = function (deps) {
       var commits = this.commits
       var l =  -1
       function find (h) {
-        var i = revlist.lastIndexOf(h, ~l ? l : null)
-        if(i !== -1) l = i
+        var i = ~l ? revlist.lastIndexOf(h) : revlist.lastIndexOf(h, l)
+        if(i !== -1) return l = i
         else if(!commits[h]) return //?
-        else find(commits[h].parent)
+        else find(commits[h].parent) //this needs to check through the merges properly.
       }
       while(heads.length)
         find(heads.shift())
