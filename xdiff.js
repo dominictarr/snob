@@ -32,39 +32,48 @@ function map(obj, itr) {
   to assume each change to an object is a set.
 
 */
-module.exports = {
-  diff: function (older, newer) {
-    var didChange = false
-    var change = map(newer, function (n, k){
-      var ch = a.diff(older[k] || [], n)
-      if(ch.length)
-        didChange = true
-      return ch
-    })
-    if(!didChange) return null
-    return change
-  },
-  diff3: function (branches) { //mine, concestor, yours,...
-    if(arguments.length > 1)
-      branches = [].slice.call(arguments)
-    //collect the keys
-    var keys = []
-    branches.forEach(function (e) {
-      for (var k in e) 
-        if(!~keys.indexOf(k)) keys.push(k)
-    })
-    var changes = {}
-    keys.forEach(function (k) {
-      var collect = branches.map(function (o) {
-        return o[k] || []
+exports = module.exports = function (deps, exports) { 
+  exports = exports || {}
+  var a = require('adiff')(deps)
+  console.log(a)
+  exports.diff =
+    function (older, newer) {
+      var didChange = false
+      var change = map(newer, function (n, k){
+        var ch = a.diff(older[k] || [], n)
+        if(ch.length)
+          didChange = true
+        return ch
       })
-      changes[k] = a.diff3(collect)
-    })
-    return changes
-  },
-  patch: function (obj, changes) {
-    return map(changes, function (change, key) {
-      return a.patch(obj[key] || [], change)
-    })
-  }
+      if(!didChange) return null
+      return change
+    }
+  exports.diff3 =
+    function (branches) { //mine, concestor, yours,...
+      if(arguments.length > 1)
+        branches = [].slice.call(arguments)
+      //collect the keys
+      var keys = []
+      branches.forEach(function (e) {
+        for (var k in e) 
+          if(!~keys.indexOf(k)) keys.push(k)
+      })
+      var changes = {}
+      keys.forEach(function (k) {
+        var collect = branches.map(function (o) {
+          return o[k] || []
+        })
+        changes[k] = a.diff3(collect)
+      })
+      return changes
+    }
+  exports.patch = 
+    function (obj, changes) {
+      return map(changes, function (change, key) {
+        return a.patch(obj[key] || [], change)
+      })
+    }
+  return exports
 }
+
+exports(null, exports)
