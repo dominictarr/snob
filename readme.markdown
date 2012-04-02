@@ -1,13 +1,14 @@
 # snob
 
-Snob is a Version Control System implemented is js. 
-you can think of it as a Model layer for realtime collaborative applications,
+Snob is an experimental Version Control System implemented is js. 
+
+You can think of it as a Model layer for realtime collaborative applications,
 or as a peer to peer database.
 
-Snob has the same architecture as git, but with plugable diff tools. That means,
+Snob has the same architecture as `git`, but with plugable diff-tools. That means,
 it can support any kind of objects, if you can `diff`, `diff3`, and `patch` them.
 
-currently ALPHA, but progressing rapidly.
+currently experimental, please contact if you are interested in using this.
 
 ## self hosting!
 
