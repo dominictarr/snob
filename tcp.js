@@ -1,4 +1,10 @@
 
+
+var createHash = require('crypto').createHash 
+function hash (obj) {
+  return createHash('sha').update(JSON.stringify(obj)).digest('hex')
+}
+
 var Docuset = require('./docuset')
 var net = require('net')
 var es = require('event-stream')
@@ -8,8 +14,22 @@ var data = {
   list: []
 }
 
-var a = new Docuset()
-var b = new Docuset()
+// alternative Repo with a shorter hash.
+
+var Repo = require('./').inject({
+  hash: function (commit) {
+    return '#'+hash(commit).substring(0,10)
+  }
+})
+
+var opts = {
+  createRepo: function (key) {
+    return new Repo()
+  }
+}
+
+var a = new Docuset(opts)
+var b = new Docuset(opts)
 
 var server = net.createServer(a.createHandler())
 server.listen(8282, function () {

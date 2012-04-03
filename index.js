@@ -6,15 +6,24 @@
 
 var a = require('./xdiff')
 var EventEmitter = require('events').EventEmitter
-var createHash = require('crypto').createHash 
 
+var createHash = require('crypto').createHash 
 function hash (obj) {
   return createHash('sha').update(JSON.stringify(obj)).digest('hex')
 }
 
-module.exports = require('./repo')({
+var defaults = {
   diff: a,
   hash: hash,
   EventEmitter: EventEmitter
-})
+}
 
+var _inject = require('./repo')
+function inject (opts) {
+  opts = opts || {}
+  for (var k in defaults)
+    opts[k] = opts[k] || defaults[k]
+  return _inject(opts)
+}
+module.exports = inject()
+module.exports.inject = inject

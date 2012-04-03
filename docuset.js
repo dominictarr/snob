@@ -2,12 +2,49 @@
 var u = require('./utils')
 var es = require('event-stream')
 var EventEmitter = require('events').EventEmitter
-var Repo = require('./')
 var render = require('render')
 
-function Docuset () {
+/*
+  need to inject the difftools, and validate functions here.
+
+  inject a createRepo that takes the name, and can setup different Repo types,
+  with different validation, diffutils, and merge rules.
+
+*/
+
+/*var _a = require('adiff')
+var a = require('./xdiff')({
+  rules: [
+    _a.oddOneOut,
+    _a.mergeInsertOverDelete,
+    function (changes) {
+      console.log('FORCE MERGE', changes)
+      return changes[changes.length - 1]
+    },
+  ]
+})
+
+var createHash = require('crypto').createHash 
+
+function hash (obj) {
+  return createHash('sha').update(JSON.stringify(obj)).digest('hex')
+}
+*/
+
+var Repo = require('./')
+
+var _createRepo = function () {
+  console.log('DEFAULT CREATE REPO')
+  return new Repo()
+} 
+
+function Docuset (opts) {
+  if(!(this instanceof Docuset)) return new Docuset(opts)
+  opts = opts || {}
+  var createRepo = opts.createRepo || _createRepo
   var repos = this.repos = {}
   var self = this
+  this.id = opts.id || '#' + Math.random()
   //could also make this create a stream instance
   this.createRawHandler = function (onConnect) {
     return function (ins, outs) {
@@ -23,7 +60,7 @@ function Docuset () {
         remotes[key] = remotes[key] || {}
         //need injectable configuration per repo ...
         //like whether to accept non ff, and what diffutils to use.
-        self.emit('new', repos[key] = new Repo())
+        self.emit('new', repos[key] = createRepo(key))
       }
       function track(key) {
           createIf(key)
@@ -69,7 +106,7 @@ function Docuset () {
           remotes[key][branch] = id
           if(!listeners[key]) connection.sub(key)
         }
-      }
+     }
       var connection = {
         sub: function (key) {
           track(key)
