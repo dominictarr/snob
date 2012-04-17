@@ -31,15 +31,28 @@ var opts = {
 var a = new Docuset(opts)
 var b = new Docuset(opts)
 
-var server = net.createServer(a.createHandler())
-server.listen(8282, function () {
-  var client = net.createConnection(8282, function () {
-      b.createHandler(function (con) {
-        var repo = con.sub('test')
-        repo.commit({list: [1,2,3]}, {parent: 'master'})
-      })(client)
-    }
-  ) 
+Docuset.prototype.createServer = function () {
+  this._server = net.createServer(this.createHandler())
+  return this._server
+}
+
+Docuset.prototype.createConnection = 
+Docuset.prototype.connect = function () {
+  var args = [].slice.call(arguments)
+  var soc = net.createConnection.apply(null, args)
+  var con = this.createHandler()(soc)
+
+  con._socket = soc
+
+  return con
+}
+
+var server = a.createServer().listen(8282, function () {
+
+  var con = b.connect(8282)
+  repo = con.sub('test')
+  repo.commit({list: [1,2,3]}, {parent: 'master'})
+
 })
 
 function checkSynced(_, source) {
@@ -48,7 +61,6 @@ function checkSynced(_, source) {
     ? 'SYNCED'
     : 'UN-SYNCED', source
   ) 
-   
 }
 
 /*setInterval(function () { 

@@ -2,7 +2,6 @@
 var u = require('./utils')
 var es = require('event-stream')
 var EventEmitter = require('events').EventEmitter
-var render = require('render')
 
 /*
   need to inject the difftools, and validate functions here.
@@ -34,7 +33,6 @@ function hash (obj) {
 var Repo = require('./')
 
 var _createRepo = function () {
-  console.log('DEFAULT CREATE REPO')
   return new Repo()
 } 
 
@@ -125,8 +123,8 @@ function Docuset (opts) {
  
       if(onConnect) onConnect(connection)
       self.emit('connection', connection)
+      return connection
     }
-
   }
 
   this.createHandler = function (onConnect) {
@@ -135,7 +133,7 @@ function Docuset (opts) {
       outs = outs || ins
       var stringify = es.stringify()
       stringify.pipe(es.log()).pipe(outs)
-      handler(
+      return handler(
         ins.pipe(es.split()).pipe(es.parse()),
         stringify
       )
@@ -148,3 +146,4 @@ function Docuset (opts) {
 Docuset.prototype = new EventEmitter()
 
 module.exports = Docuset
+
