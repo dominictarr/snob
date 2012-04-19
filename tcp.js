@@ -58,6 +58,7 @@ setInterval(function () {
   var repo = b.repos.test
   var data = repo.checkout('master')
   data.list.push(data.list.length)
+  console.log(data)
   repo.commit(data, {parent: 'master'})
 }, 1e3)
 
