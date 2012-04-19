@@ -204,7 +204,7 @@ module.exports = function (deps) {
         throw new Error('there are no changes') 
       commit.merged = branches.slice()
       commit.merged.splice(1,1) //concestor should not be in merged
-      commit.parent = this.getId(branches[0])
+      commit.parent = concestor //this.getId(branches[0])
       commit.depth = this.get(branches[0]).depth + 1
       //set the timestamp to be one greater than the latest commit,
       //so that merge commits are deterministic
