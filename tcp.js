@@ -31,22 +31,6 @@ var opts = {
 var a = new Docuset(opts)
 var b = new Docuset(opts)
 
-Docuset.prototype.createServer = function () {
-  this._server = net.createServer(this.createHandler())
-  return this._server
-}
-
-Docuset.prototype.createConnection = 
-Docuset.prototype.connect = function () {
-  var args = [].slice.call(arguments)
-  var soc = net.createConnection.apply(null, args)
-  var con = this.createHandler()(soc)
-
-  con._socket = soc
-
-  return con
-}
-
 var server = a.createServer().listen(8282, function () {
 
   var con = b.connect(8282)
@@ -78,19 +62,13 @@ setInterval(function () {
 }, 1e3)
 
 
-//okay, I'm still having problems sending commits when out of sync.
-//like if a merge arrives but don't have it's parents?
-
-
 //TODO injectable merge rules!
 //and allow appends in adiff
 
-//setTimeout(function() {
-  setInterval(function () {
-    var repo = a.repos.test
-    var data = repo.checkout('master')
-    data.list.unshift('!')
-    repo.commit(data, {parent: 'master'})
-  }, 2e3)
-//}, 0)
+setInterval(function () {
+  var repo = a.repos.test
+  var data = repo.checkout('master')
+  data.list.unshift('!')
+  repo.commit(data, {parent: 'master'})
+}, 2e3)
 

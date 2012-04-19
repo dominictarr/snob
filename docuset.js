@@ -2,6 +2,7 @@
 var u = require('./utils')
 var es = require('event-stream')
 var EventEmitter = require('events').EventEmitter
+var net = require('net')
 
 /*
   need to inject the difftools, and validate functions here.
@@ -9,25 +10,6 @@ var EventEmitter = require('events').EventEmitter
   inject a createRepo that takes the name, and can setup different Repo types,
   with different validation, diffutils, and merge rules.
 
-*/
-
-/*var _a = require('adiff')
-var a = require('./xdiff')({
-  rules: [
-    _a.oddOneOut,
-    _a.mergeInsertOverDelete,
-    function (changes) {
-      console.log('FORCE MERGE', changes)
-      return changes[changes.length - 1]
-    },
-  ]
-})
-
-var createHash = require('crypto').createHash 
-
-function hash (obj) {
-  return createHash('sha').update(JSON.stringify(obj)).digest('hex')
-}
 */
 
 var Repo = require('./')
@@ -144,6 +126,23 @@ function Docuset (opts) {
 }
 
 Docuset.prototype = new EventEmitter()
+
+Docuset.prototype.createServer = function () {
+  // TODO: support different server types, http, socket.io
+  // maybe subclasses would be a good way to do this?
+  this._server = net.createServer(this.createHandler())
+  return this._server
+}
+
+Docuset.prototype.createConnection = 
+Docuset.prototype.connect = function () {
+  var args = [].slice.call(arguments)
+  var soc = net.createConnection.apply(null, args)
+  var con = this.createHandler()(soc)
+
+  con._socket = soc
+  return con
+}
 
 module.exports = Docuset
 
