@@ -20,5 +20,6 @@ var second = snob.commit(world, {
 
 snob2.addCommits([init, second])
 assert.deepEqual(snob2.checkout(second.id), world)
-
-
+assert.deepEqual(world,  
+  { hello: [ 'who', 'what', 'how', 'when', 'why' ] })
+console.log(world, snob2.checkout(second.id))

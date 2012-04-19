@@ -16,7 +16,10 @@ var _world = snob.checkout(init.id)
 
 assert.deepEqual(_world, world)
 
-console.log(_world, world)
+console.log('after checkout', _world, world)
+assert.deepEqual( _world,  { hello: [ 'who', 'what', 'when', 'why' ] } )
+assert.deepEqual(  world,  { hello: [ 'who', 'what', 'when', 'why' ] } )
+ 
 world.hello.splice(2, 0, 'how')
 var second = snob.commit(world, {
     message: 'second',
@@ -29,6 +32,12 @@ console.log(snob.revlist(second.id))
 assert.deepEqual(
   snob.revlist(second.id), 
   [ init.id, second.id])
+
+console.log('checkout after change', snob.checkout(second.id))
+assert.deepEqual( snob.checkout(second.id), world)
+assert.deepEqual( world,  { hello: [ 'who', 'what', 'how', 'when', 'why' ] } ) 
+
+console.log('-------------------------------')
 
 var snob2 = new Repo()
 var snob3 = new Repo()
@@ -74,6 +83,8 @@ var branch = snob.commit(_world, {
     parent: 'branchy'
   })
 
+console.log('BRANCHY', snob.checkout('branchy'))
+
 assert.equal(branch.depth, 2)
 
 assert.deepEqual(snob.revlist('branchy'), [init.id, branch.id])
@@ -87,6 +98,10 @@ assert.equal(concestor, init.id)
 var merged = snob.merge(['master', 'branchy'], {message: 'merged'})
 
 assert.ok(!snob.isFastForward(branch.id, snob.revlist(second.id)))
+
+console.log('MERGED',snob.checkout(merged.id))
+assert.deepEqual( snob.checkout(merged.id),
+  { hello: [ "who", "what", "how", "when", "why", "WTF!?" ] } )
 
 // here I'm passing in the commit that is expected to be the remote 
 // head. normally you would just say push(remote, branch) 
@@ -123,8 +138,8 @@ world.whatever = ['everything', 'changes']
 
 console.log(snob4.commit(world, {message: 'whatever', parent: 'master'}))
 
-console.log(snob.checkout('master'))
-console.log(snob4.checkout('master'))
+console.log('snob-master:', snob.checkout('master'))
+console.log('snob4-master:', snob4.checkout('master'))
 snob4.pull(snob, 'master')
 console.log(snob4.getRevs('master'))
 /*
@@ -176,6 +191,4 @@ var ffrevs = snob.revlist(merged.id, second.id)
 assert.deepEqual(ffrevs, [branch.id, merged.id])
 
 var world3 = snob.checkout('master')
-console.log(world3)
-
-
+console.log('world3:', world3)
