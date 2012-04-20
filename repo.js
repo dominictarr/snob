@@ -25,6 +25,7 @@ module.exports = function (deps) {
       // head = checkout (branch)
       // diff(head, world)
       // bundle with meta, add to commits 
+      if(!meta) meta = {parent: 'master'}
       var branch = meta.parent //save the branch name
       meta.parent = this.getId(branch) 
       var commit = u.copy(meta) // filter correct attributs only?
