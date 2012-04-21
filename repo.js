@@ -106,6 +106,7 @@ module.exports = function (deps) {
       return id
     },
     clone: function (remote, branch) {
+      //branch = branch || 'master'
       for(var j in this.commits)
         throw new Error('can only clone on an empty repo')
       if(!branch)
@@ -217,12 +218,13 @@ module.exports = function (deps) {
       return commit
     },
     checkout: function (commitish) {
+
       //idea: cache recently hit checkouts
       //will improve performance of large merges
-      if(commitish == null)
-        return {}
+      commitish = commitish || 'master'
       var commit = this.get(commitish)
-      var state = this.checkout(commit.parent)
+      if(!commit) return {}
+      var state = commit.parent ? this.checkout(commit.parent) : {}
       return a.patch(state, commit.changes)
     },
     remote: function (id, branch, commit) {
