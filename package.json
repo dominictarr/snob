@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "xdiff": "0.2",
-    "optimist": "0.3"
+    "optimist": "0.3",
+    "event-stream": "0.9",
+    "browser-stream": "~0.0.3"
    },
   "bin": {
     "snob": "./cli.js"
