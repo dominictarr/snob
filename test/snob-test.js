@@ -78,6 +78,8 @@ assert.throws(function () {
 _world.hello.push('WTF!?')
 
 snob.branch('branchy', init.id)
+assert.notDeepEqual(snob.checkout('branchy'), _world)
+
 var branch = snob.commit(_world, {
     message: 'branch',
     parent: 'branchy'

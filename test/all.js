@@ -1,0 +1,5 @@
+require('./snob-test')
+require('./docuset-test')
+require('./inmem')
+require('./snob-test-replicate')
+require('./replication-test')

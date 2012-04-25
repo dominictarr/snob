@@ -53,8 +53,6 @@ function contract() {
   }
 }
 
-d.on('connection', console.log)
-
 d.createRawHandler(validCon)(toD, toE)
 
 e.createRawHandler(function (con){
@@ -88,40 +86,43 @@ e.createRawHandler(function (con){
   //make a commit on the E side.
   repo.commit(state, {parent: 'master'})
 
-  c.validate()
+  //need to flush
+  process.nextTick(function () {
+    c.validate()
 
-  a.deepEqual(d.repos.test.getRevs('master'), repo.getRevs('master'))
-  
-  a.deepEqual(repo.checkout('master'), state)
-  a.deepEqual(
-    repo.checkout('master'), 
-    d.repos.test.checkout('master')
-  )
+    a.deepEqual(d.repos.test.getRevs('master'), repo.getRevs('master'))
+    
+    a.deepEqual(repo.checkout('master'), state)
+    a.deepEqual(
+      repo.checkout('master'), 
+      d.repos.test.checkout('master')
+    )
 
-  //the repos have been syncronised!
+    //the repos have been syncronised!
 
-  var dData = d.repos.test.checkout('master')
-  dData.goodbye = ['test2']
+    var dData = d.repos.test.checkout('master')
+    dData.goodbye = ['test2']
 
-  toE.once('data', c.isCalled(function (data) {
-    a.has(data, ['UPDATE', 'test', 'master', []])
-  }, 'UPDATE is sent 2'))
+    toE.once('data', c.isCalled(function (data) {
+      a.has(data, ['UPDATE', 'test', 'master', []])
+    }, 'UPDATE is sent 2'))
 
-  e.repos.test.once('update', c.isCalled(function (revs, branch) {
-    a.equal(branch, 'master')
-  }, 'update is emitted'))
+    e.repos.test.once('update', c.isCalled(function (revs, branch) {
+      a.equal(branch, 'master')
+    }, 'update is emitted'))
 
-  //make a commit on the D side
+    //make a commit on the D side
 
-  d.repos.test.commit(dData, {parent: 'master'})
- 
-  c.validate()
- 
-  a.deepEqual(d.repos.test.getRevs('master'), repo.getRevs('master'))
-  console.log(d.repos.test.getRevs('master'), repo.getRevs('master'))
-  a.equal(repo.branch('master'), d.repos.test.branch('master'))
-  a.deepEqual(repo.checkout('master'), d.repos.test.checkout('master'))
-
+    d.repos.test.commit(dData, {parent: 'master'})
+    process.nextTick(function () { 
+      c.validate()
+     
+      a.deepEqual(d.repos.test.getRevs('master'), repo.getRevs('master'))
+      console.log(d.repos.test.getRevs('master'), repo.getRevs('master'))
+      a.equal(repo.branch('master'), d.repos.test.branch('master'))
+      a.deepEqual(repo.checkout('master'), d.repos.test.checkout('master'))
+    })
+  })
 
 })(toE, toD)
 
