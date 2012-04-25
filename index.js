@@ -8,7 +8,7 @@ var a = require('xdiff')
 
 var createHash = require('crypto').createHash 
 function hash (obj) {
-  return createHash('sha').update(JSON.stringify(obj)).digest('hex')
+  return createHash('sha1').update(JSON.stringify(obj)).digest('hex')
 }
 
 var defaults = {
