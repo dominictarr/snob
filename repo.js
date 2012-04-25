@@ -3,7 +3,6 @@ module.exports = function (deps) {
   var hash = deps.hash
   var EventEmitter = require('events').EventEmitter
   var u = require('./utils')
-  // reimplementing git, because I'm insane.
 
   function Repository () {
     this.commits = {}
@@ -18,13 +17,9 @@ module.exports = function (deps) {
   Repository.prototype = u.extend(new EventEmitter(), {
     commit: function (world, meta) {
       //meta is author, message, parent commit
-      //this is the current state of the repo.
-      //commit will diff it with the head of the given branch 
+      //commit will diff it with the head of the given branch/parent commit
       //and then save that diff in the commit list.
 
-      // head = checkout (branch)
-      // diff(head, world)
-      // bundle with meta, add to commits 
       if(!meta) meta = {parent: 'master'}
       var branch = meta.parent //save the branch name
       meta.parent = this.getId(branch) 
@@ -36,15 +31,13 @@ module.exports = function (deps) {
       commit.timestamp = Date.now()
       commit.id = hash(commit)
 
-      // XXX make an error if the commits are empty !!! XXX 
-
       this.addCommits([commit], branch)
  
       return commit
-        // emit the new commit 
     },
     get: function (commitish) {
-      return this.commits[commitish] || this.commits[this.branches[commitish] || this.tags[commitish]]
+      return this.commits[commitish] || 
+        this.commits[this.branches[commitish] || this.tags[commitish]]
     },
     getId: function (commitish) {
       return (this.get(commitish) || {id:null}).id 
@@ -65,7 +58,7 @@ module.exports = function (deps) {
       return a.diff(head, world)
     },
     revlist: function (id, since) {
-      id = this.getId(id) // force to commit
+      id = this.getId(id) // coerse to commit
       var revlist = []
       var exclude = since ? this.revlist(since) : []
       var self = this
@@ -89,11 +82,11 @@ module.exports = function (deps) {
       var revs = this.getRevs(branch, this.remote(rId, branch))
       return revs
     },
-    recieve: function (revs, branch, allowMerge) {
-      var ff = this.isFastForward(branch, revs)
+    recieve: function (revs, branch, allowMerge) { 
       var last = revs[revs.length - 1]
-      if(!last)
-        return //throw new Error('recieved empty revs')
+      if(!last) return 
+      this.emit('preupdate', revs, branch)
+      var ff = this.isFastForward(branch, revs)
       var id = last.id
       if(!allowMerge && !ff)
         throw new Error('recieved non fast-forward. pull first')
@@ -143,17 +136,10 @@ module.exports = function (deps) {
       }
       return false
     },
-    /*
-      I think there is a problem with the concestor
-      after repeated merges.
-
-      CONFIRMED. TODO write test.
-    */
     concestor: function (heads) { //a list of commits you want to merge
       if(arguments.length > 1)
         heads = [].slice.call(arguments)
       // find the concestor of the heads
-      // this is the only interesting problem left!
       // get the revlist of the first head
       // recurse down from each head, looking for the last index of that item.
       // chop the tail when you find something, and move to the next head.
@@ -218,7 +204,6 @@ module.exports = function (deps) {
       return commit
     },
     checkout: function (commitish) {
-
       //idea: cache recently hit checkouts
       //will improve performance of large merges
       commitish = commitish || 'master'
@@ -231,6 +216,49 @@ module.exports = function (deps) {
       var remotes = 
         this.remotes[id] = this.remotes[id] || {}
       return remotes[branch] = commit || remotes[branch]
+    },
+    sync: function (obj, opts) {
+      if(!obj)
+        throw new Error('expected object to sync')
+      opts = opts || {}
+      var branch = opts.branch || 'master'
+      var interval = opts.interval || 1e3
+      var self = this
+      this._sync = this._sync || []
+      var syncr = {
+        obj: obj,
+        update: function () {
+          var _obj = self.checkout(branch)
+          var delta = a.diff(obj,_obj) 
+          if(!delta) return
+          if(delta) a.patch(obj, delta, true)
+        },
+        check: function() {
+          try {
+            self.commit(obj)  
+          } catch (e) {
+            if(!/no changes/.test(e.message)) throw e
+          }
+        },
+        stop: function () {
+          self.removeListener('update', syncr.update)
+          self.removeListener('preupdate', syncr._check)
+          clearInterval(syncr.check)
+        }
+      }
+      if(interval > 0)
+        syncr.ticker = setInterval(syncr.check, interval)
+      this.on('update', syncr.update)
+      this.on('preupdate', syncr.check) 
+      this._sync.push(syncr)
+      syncr.update() //incase there is something already there.
+      return syncr
+    },
+    unsync: function (obj) {
+      this._sync.forEach(function (e) {
+        if(e.obj === obj)
+          e.stop()
+      })
     }
   })
 
