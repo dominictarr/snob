@@ -17,6 +17,8 @@
   bit minimise amount to send.
 
   after the client has greeted, send any updates since the concestor
+
+  the patterns here is getting consistent with my other duplex streams.
 */
 var through = require('event-stream').through
 module.exports = function(repo, doGreet) {
@@ -67,7 +69,7 @@ module.exports = function(repo, doGreet) {
       repo.recieve(payload, branch, true)
     } 
   }, function () {
-    if(!this.pause && !queue.length)
+    if(!this.paused && !queue.length)
       this.emit('end')
   })
   //called from the client.
