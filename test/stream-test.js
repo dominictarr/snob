@@ -5,11 +5,10 @@
 
 
 var Repo = require('../')
-var createStream = require('../stream')
-var es = require('event-stream')
 var A = new Repo()
 var B = new Repo()
 
+var es = require('event-stream')
 var a = require('assertions')
 
 var as = A.createStream()
