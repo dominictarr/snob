@@ -3,6 +3,7 @@ module.exports = function (deps) {
   var hash = deps.hash
   var EventEmitter = require('events').EventEmitter
   var u = require('./utils')
+  var createStream = require('./stream')
 
   function Repository () {
     this.commits = {}
@@ -57,10 +58,23 @@ module.exports = function (deps) {
         world = this.checkout(world)
       return a.diff(head, world)
     },
-    revlist: function (id, since) {
-      id = this.getId(id) // coerse to commit
+// revlist (head, since)
+// @head -- commitish
+// @since -- commitish (optional)
+//
+// return list of commit (ids) for head
+// that come after @since.
+// TODO: allow since to be an revlist.
+// TODO: throw an error if head  or since is unknown.
+// if it doesn't know anything in since, it will send the whole array.
+    revlist: function (head, since) {
+      var id = this.getId(head) // coerse to commit
       var revlist = []
-      var exclude = since ? this.revlist(since) : []
+      var exclude = (
+          Array.isArray(since) ? since 
+        : since ? this.revlist(since) 
+        : []
+      )
       var self = this
       function recurse (id) {
         if( ~revlist.indexOf(id) || !id) return
@@ -75,13 +89,16 @@ module.exports = function (deps) {
       recurse(id)
       return revlist
     },
+// same as revlist, but return the revs themselves.
     getRevs: function (head, since) {
       return this.revlist(head, since).map(this.get)
     },
+// send revs to remote.
     send: function (rId, branch) {
       var revs = this.getRevs(branch, this.remote(rId, branch))
       return revs
     },
+// process revs sent by send
     recieve: function (revs, branch, allowMerge) { 
       var last = revs[revs.length - 1]
       if(!last) return 
@@ -98,6 +115,8 @@ module.exports = function (deps) {
       }
       return id
     },
+// clone another repo
+// works inmemory, used to test.
     clone: function (remote, branch) {
       //branch = branch || 'master'
       for(var j in this.commits)
@@ -119,6 +138,11 @@ module.exports = function (deps) {
       remote.remote(this.id, branch, id)
       this.remote(remote.id, branch, id)
     },
+// isFastForward (head, revlist)
+// @head (commitish) -- potential ancestor
+// @revlist          -- revs, possibly since head.
+//
+// return true if head is in revlist.
     isFastForward: function (head, revlist) {
       //return the nodes of revlist that fast-forward head.
       // revlist two is a ff if head is an ancestor.
@@ -136,6 +160,11 @@ module.exports = function (deps) {
       }
       return false
     },
+// concestor (heads)
+// heads (array of commitish)
+// 
+// find the commit that is the common ancestor of every commit
+// in heads
     concestor: function (heads) { //a list of commits you want to merge
       if(arguments.length > 1)
         heads = [].slice.call(arguments)
@@ -160,6 +189,9 @@ module.exports = function (deps) {
         find(heads.shift())
       return revlist[l]
     },
+// addCommits (commits, branch)
+// 
+// add commits to branch
    addCommits: function (commits, branch) {
       //iterate through commits
       var self = this
@@ -173,8 +205,11 @@ module.exports = function (deps) {
           throw new Error('dangling commit:' + e.id + ' ' + JSON.stringify(e)) // should never happen.
       })
       if(branch) this.branch(branch, commits[commits.length - 1].id)
-      if(revs.length) 
+      if(revs.length) { 
+        if(!this._initialized)
+          this.emit('initial', revs, branch), this._initialized = true
         this.emit('update', revs, branch)
+      }
     },
     merge: function (branches, meta) { //branches...
       var self = this
@@ -182,6 +217,8 @@ module.exports = function (deps) {
       // ensure that merging the same branches produces the same merge commit.
       branches = branches.map(this.getId).sort()
       var concestor = this.concestor(branches)
+      if(!concestor)
+        throw new Error('don\'t have concestor for :' + branches)
       branches.splice(1, 0, concestor)
       var commit = meta ? u.copy(meta) : {}
       var checkouts = branches.map(function (e) {
@@ -196,6 +233,7 @@ module.exports = function (deps) {
       commit.depth = this.get(branches[0]).depth + 1
       //set the timestamp to be one greater than the latest commit,
       //so that merge commits are deterministic
+      console.log('BRINCHES',branches)
       commit.timestamp = u.max(branches, function (e) { return self.get(e).timestamp }) + 1
 
       commit.id = hash(commit)
@@ -227,13 +265,18 @@ module.exports = function (deps) {
       this._sync = this._sync || []
       var syncr = {
         obj: obj,
-        update: function () {
+        remoteUpdate: function () {
           var _obj = self.checkout(branch)
           var delta = a.diff(obj,_obj) 
           if(!delta) return
           if(delta) a.patch(obj, delta, true)
+          if(opts.onUpdate)
+            opts.onUpdate()
         },
-        check: function() {
+        //check for local updates
+        localUpdate: function() {
+          if(opts.onPreUpdate)
+            opts.onPreUpdate()
           try {
             self.commit(obj)  
           } catch (e) {
@@ -241,8 +284,8 @@ module.exports = function (deps) {
           }
         },
         stop: function () {
-          self.removeListener('update', syncr.update)
-          self.removeListener('preupdate', syncr._check)
+          self.removeListener('update', syncr.remoteUpdate)
+          self.removeListener('preupdate', syncr.localUpdate)
           clearInterval(syncr.check)
         }
       }
@@ -259,6 +302,9 @@ module.exports = function (deps) {
         if(e.obj === obj)
           e.stop()
       })
+    },
+    createStream: function (opts) {
+      return createStream(this, opts)
     }
   })
 
