@@ -31,7 +31,7 @@ console.log(snob.revlist(second.id))
 
 assert.deepEqual(
   snob.revlist(second.id), 
-  [ init.id, second.id])
+  [ Repo.initial, init.id, second.id])
 
 console.log('checkout after change', snob.checkout(second.id))
 assert.deepEqual( snob.checkout(second.id), world)
@@ -89,7 +89,7 @@ console.log('BRANCHY', snob.checkout('branchy'))
 
 assert.equal(branch.depth, 2)
 
-assert.deepEqual(snob.revlist('branchy'), [init.id, branch.id])
+assert.deepEqual(snob.revlist('branchy'), [Repo.initial, init.id, branch.id])
 
 //if snob tries to push to snob2 we'll get a non-ff error.
 

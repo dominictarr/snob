@@ -1,5 +1,6 @@
 require('./snob-test')
+require('./stream-test')
 require('./docuset-test')
-require('./inmem')
 require('./snob-test-replicate')
 require('./replication-test')
+require('./sync-test')
