@@ -2,7 +2,7 @@
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (dominictarr.com)",
   "name": "snob",
   "description": "self hosting distributed version control system in javascript",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "homepage": "https://github.com/dominictarr/snob",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   "dependencies": {
     "xdiff": "0.2",
     "optimist": "0.3",
-    "event-stream": "0.9",
+    "event-stream": "~2.1",
     "browser-stream": "~0.0.3"
    },
   "bin": {
