@@ -5,6 +5,16 @@ module.exports = function (deps) {
   var u = require('./utils')
   var createStream = require('./stream')
 
+  var initial = {
+    timestamp: 0,
+    parent: null,
+    changes: [],
+    parent: null,
+    depth: 0
+  }
+
+  Repository.initial = initial.id = hash(initial)
+
   function Repository () {
     this.commits = {}
     this.branches = {}
@@ -13,6 +23,7 @@ module.exports = function (deps) {
     this.getId = this.getId.bind(this)
     this.id = '#'+Math.random()
     this.remotes = {}
+    this.addCommits([initial], 'master') 
   }
 
   Repository.prototype = u.extend(new EventEmitter(), {
@@ -120,7 +131,8 @@ module.exports = function (deps) {
     clone: function (remote, branch) {
       //branch = branch || 'master'
       for(var j in this.commits)
-        throw new Error('can only clone on an empty repo')
+        if(j != initial.id)
+          throw new Error('can only clone on an empty repo')
       if(!branch)
         throw new Error('expect branch to clone')
      
@@ -259,8 +271,10 @@ module.exports = function (deps) {
       if(!obj)
         throw new Error('expected object to sync')
       opts = opts || {}
+      if(opts.onUpdate)
+        this.on('sync', opts.onUpdate)
       var branch = opts.branch || 'master'
-      var interval = opts.interval || 1e3
+      var interval = opts.interval || 1e2
       var self = this
       this._sync = this._sync || []
       var syncr = {
@@ -270,8 +284,7 @@ module.exports = function (deps) {
           var delta = a.diff(obj,_obj) 
           if(!delta) return
           if(delta) a.patch(obj, delta, true)
-          if(opts.onUpdate)
-            opts.onUpdate()
+          self.emit('sync')
         },
         //check for local updates
         localUpdate: function() {
@@ -286,20 +299,21 @@ module.exports = function (deps) {
         stop: function () {
           self.removeListener('update', syncr.remoteUpdate)
           self.removeListener('preupdate', syncr.localUpdate)
-          clearInterval(syncr.check)
+          clearInterval(syncr.ticker)
         }
       }
       if(interval > 0)
-        syncr.ticker = setInterval(syncr.check, interval)
-      this.on('update', syncr.update)
-      this.on('preupdate', syncr.check) 
+        syncr.ticker = setInterval(syncr.localUpdate, interval)
+
+      this.on('update', syncr.remoteUpdate)
+      this.on('preupdate', syncr.localUpdate) 
       this._sync.push(syncr)
-      syncr.update() //incase there is something already there.
+      syncr.remoteUpdate() //incase there is something already there.
       return syncr
     },
     unsync: function (obj) {
       this._sync.forEach(function (e) {
-        if(e.obj === obj)
+        if(e.obj === obj || obj === undefined)
           e.stop()
       })
     },
