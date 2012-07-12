@@ -19,7 +19,9 @@
   after the client has greeted, send any updates since the concestor
 
   the patterns here is getting consistent with my other duplex streams.
+  through isn't right, because it has different pause behaviour.
 */
+
 var through = require('event-stream').through
 module.exports = function(repo, doGreet) {
   var queue = []
